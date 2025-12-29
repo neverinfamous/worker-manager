@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { WorkerListView } from '@/components/workers/WorkerListView'
 import { PageListView } from '@/components/pages/PageListView'
 import { MetricsView } from '@/components/metrics/MetricsView'
+import { JobsView } from '@/components/jobs/JobsView'
+import { WebhooksView } from '@/components/webhooks/WebhooksView'
 import {
     Cloud,
     FileCode,
@@ -140,50 +142,3 @@ export default function App(): React.ReactNode {
     )
 }
 
-function JobsView(): React.ReactNode {
-    return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Job History</h1>
-                <p className="text-muted-foreground">
-                    Track all operations and their status
-                </p>
-            </div>
-
-            <div className="rounded-lg border">
-                <div className="p-8 text-center text-muted-foreground">
-                    <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No jobs recorded yet</p>
-                    <p className="text-sm mt-1">Operations will appear here as you manage Workers and Pages</p>
-                </div>
-            </div>
-        </div>
-    )
-}
-
-function WebhooksView(): React.ReactNode {
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Webhooks</h1>
-                    <p className="text-muted-foreground">
-                        Configure HTTP notifications for events
-                    </p>
-                </div>
-                <Button className="gap-2">
-                    <Webhook className="h-4 w-4" />
-                    Add Webhook
-                </Button>
-            </div>
-
-            <div className="rounded-lg border">
-                <div className="p-8 text-center text-muted-foreground">
-                    <Webhook className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No webhooks configured</p>
-                    <p className="text-sm mt-1">Add a webhook to receive notifications for deployments, errors, and more</p>
-                </div>
-            </div>
-        </div>
-    )
-}

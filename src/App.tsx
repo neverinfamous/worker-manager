@@ -3,6 +3,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { Button } from '@/components/ui/button'
 import { WorkerListView } from '@/components/workers/WorkerListView'
 import { PageListView } from '@/components/pages/PageListView'
+import { MetricsView } from '@/components/metrics/MetricsView'
 import {
     Cloud,
     FileCode,
@@ -135,54 +136,6 @@ export default function App(): React.ReactNode {
                 {currentView === 'jobs' && <JobsView />}
                 {currentView === 'webhooks' && <WebhooksView />}
             </main>
-        </div>
-    )
-}
-
-function MetricsView(): React.ReactNode {
-    return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight">Metrics</h1>
-                <p className="text-muted-foreground">
-                    Analytics and performance metrics for your Workers and Pages
-                </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-4">
-                <MetricCard title="Total Requests" value="1.2M" change="+12%" />
-                <MetricCard title="Success Rate" value="99.8%" change="+0.2%" />
-                <MetricCard title="Avg Latency" value="42ms" change="-5ms" />
-                <MetricCard title="CPU Time" value="8.2ms" change="-0.8ms" />
-            </div>
-
-            <div className="rounded-lg border bg-card p-6">
-                <h3 className="font-semibold mb-4">Request Volume (24h)</h3>
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                    Chart visualization coming soon
-                </div>
-            </div>
-        </div>
-    )
-}
-
-function MetricCard({
-    title,
-    value,
-    change,
-}: {
-    title: string
-    value: string
-    change: string
-}): React.ReactNode {
-    const isPositive = change.startsWith('+') || (change.startsWith('-') && change.includes('ms'))
-    return (
-        <div className="rounded-lg border bg-card p-4">
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold mt-1">{value}</p>
-            <p className={`text-sm mt-1 ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {change}
-            </p>
         </div>
     )
 }

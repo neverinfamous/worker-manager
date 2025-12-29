@@ -36,19 +36,14 @@ export async function validateAuth(request: Request, env: Env): Promise<AuthResu
     }
 
     try {
-        // Verify JWT with Cloudflare Access
-        const certsUrl = `${env.TEAM_DOMAIN}/cdn-cgi/access/certs`
-        const certsResponse = await fetch(certsUrl)
+        // Note: Cloudflare Access validates the JWT cryptographically at the edge
+        // before the request reaches the Worker. We only need to decode the claims
+        // and verify audience/expiration for defense-in-depth.
 
-        if (!certsResponse.ok) {
-            return { valid: false, error: 'Failed to fetch signing certificates' }
-        }
-
-        const certs = await certsResponse.json() as { public_certs: Array<{ kid: string; cert: string }> }
-
-        // Decode and verify JWT
-        const [headerB64, payloadB64] = jwt.split('.')
-        if (!headerB64 || !payloadB64) {
+        // Decode JWT (signature already verified by Cloudflare Access)
+        const parts = jwt.split('.')
+        const payloadB64 = parts[1]
+        if (!payloadB64) {
             return { valid: false, error: 'Invalid token format' }
         }
 

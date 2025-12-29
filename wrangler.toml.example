@@ -1,0 +1,50 @@
+# Worker Manager - Wrangler Configuration Example
+# Copy this file to wrangler.toml and fill in your values
+
+name = "worker-manager"
+main = "worker/index.ts"
+compatibility_date = "2024-12-01"
+
+# Static assets from Vite build
+[assets]
+directory = "./dist"
+
+# D1 Database for metadata (shadow registry)
+[[d1_databases]]
+binding = "METADATA"
+database_name = "worker-manager-metadata"
+database_id = "your-database-id-here"
+
+# R2 Bucket for backups
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "worker-manager-backups"
+
+# KV Namespace for caching (optional)
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id-here"
+
+# Rate limiting (optional, requires paid Workers plan)
+# [[ratelimits]]
+# name = "RATE_LIMITER"
+# namespace_id = "1001"
+# simple = { limit = 100, period = 60 }
+
+# Secrets (set via `wrangler secret put <NAME>`)
+# Required:
+#   ACCOUNT_ID   - Your Cloudflare account ID
+#   API_KEY      - Cloudflare API token with Workers/Pages permissions
+#   TEAM_DOMAIN  - Cloudflare Access team domain (e.g., https://yourteam.cloudflareaccess.com)
+#   POLICY_AUD   - Cloudflare Access Application Audience (AUD) tag
+
+# Environment-specific overrides
+[env.production]
+# Production-specific settings
+routes = [
+  { pattern = "worker.yourdomain.com", zone_name = "yourdomain.com" }
+]
+
+[env.staging]
+# Staging-specific settings
+name = "worker-manager-staging"

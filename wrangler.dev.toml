@@ -1,0 +1,24 @@
+# Worker Manager - Local Development Configuration
+# This configuration is for local development with mock data
+
+name = "worker-manager-dev"
+main = "worker/index.ts"
+compatibility_date = "2024-12-01"
+
+# Use local D1 database
+[[d1_databases]]
+binding = "METADATA"
+database_name = "worker-manager-metadata-dev"
+database_id = "local"
+
+# Use local R2 bucket simulation
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "worker-manager-backups-dev"
+
+# Development variables (not secrets, just for local testing)
+[vars]
+ACCOUNT_ID = "dev-account"
+API_KEY = "dev-api-key"
+TEAM_DOMAIN = "https://dev.cloudflareaccess.com"
+POLICY_AUD = "dev-policy-aud"

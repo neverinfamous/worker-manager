@@ -1,36 +1,37 @@
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Build output
 dist/
+.wrangler/
 
-# Environment variables
+# Environment files
 .env
 .env.local
 .env.*.local
+.dev.vars
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-
-# Database files
-*.db
-*.db-journal
-
-# Editor directories
-.idea/
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# Wrangler
-.wrangler/
-.dev.vars
+# Logs
+*.log
+npm-debug.log*
 
 # Test coverage
 coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Temporary files
+tmp/
+temp/

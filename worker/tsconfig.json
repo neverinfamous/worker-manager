@@ -1,20 +1,15 @@
 {
     "compilerOptions": {
         "target": "ES2022",
-        "useDefineForClassFields": true,
-        "lib": [
-            "ES2022",
-            "DOM",
-            "DOM.Iterable"
-        ],
         "module": "ESNext",
-        "skipLibCheck": true,
         "moduleResolution": "bundler",
-        "allowImportingTsExtensions": true,
-        "resolveJsonModule": true,
-        "isolatedModules": true,
-        "noEmit": true,
-        "jsx": "react-jsx",
+        "lib": [
+            "ES2022"
+        ],
+        "types": [
+            "@cloudflare/workers-types"
+        ],
+        "skipLibCheck": true,
         "strict": true,
         "noImplicitAny": true,
         "strictNullChecks": true,
@@ -32,19 +27,14 @@
         "noImplicitOverride": true,
         "forceConsistentCasingInFileNames": true,
         "esModuleInterop": true,
-        "baseUrl": ".",
-        "paths": {
-            "@/*": [
-                "./src/*"
-            ]
-        }
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true
     },
     "include": [
-        "src"
+        "./**/*.ts"
     ],
-    "references": [
-        {
-            "path": "./tsconfig.node.json"
-        }
+    "exclude": [
+        "node_modules"
     ]
 }

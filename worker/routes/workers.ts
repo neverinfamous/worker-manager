@@ -46,6 +46,12 @@ export async function handleWorkersRoutes(
         return listWorkers(env, isLocal)
     }
 
+    // POST /api/workers - Create new worker
+    if (path === '/api/workers' && method === 'POST') {
+        const body = await request.json() as { name: string }
+        return createWorker(env, body.name, isLocal)
+    }
+
     // Match /api/workers/:name patterns
     const workerMatch = path.match(/^\/api\/workers\/([^/]+)$/)
     if (workerMatch) {
@@ -142,6 +148,61 @@ async function listWorkers(env: Env, isLocal: boolean): Promise<Response> {
                 name: script.id, // In CF API, the script id IS the name
             }))
     }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function createWorker(env: Env, name: string, isLocal: boolean): Promise<Response> {
+    if (isLocal) {
+        return new Response(JSON.stringify({
+            success: true,
+            result: {
+                id: name,
+                name,
+                created_on: new Date().toISOString(),
+                modified_on: new Date().toISOString(),
+                handlers: ['fetch'],
+            },
+        }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    // Create a minimal worker script
+    const workerScript = `export default {
+  async fetch(request, env, ctx) {
+    return new Response('Hello from ${name}!');
+  },
+};`
+
+    // Use multipart form data to upload the worker
+    const formData = new FormData()
+
+    // Add metadata
+    const metadata = {
+        main_module: 'index.js',
+        compatibility_date: '2024-12-01',
+    }
+    formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }))
+
+    // Add the worker script
+    formData.append('index.js', new Blob([workerScript], { type: 'application/javascript+module' }), 'index.js')
+
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${name}`,
+        {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+            },
+            body: formData,
+        }
+    )
+
+    const data = await response.json() as { success: boolean; result?: unknown; errors?: unknown[] }
 
     return new Response(JSON.stringify(data), {
         status: response.ok ? 200 : response.status,

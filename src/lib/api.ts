@@ -214,6 +214,7 @@ export async function setWorkerSecret(
     secretName: string,
     value: string
 ): Promise<ApiResponse<null>> {
+    invalidateCache(`/workers/${workerName}/secrets`)
     return apiFetch<null>(`/workers/${encodeURIComponent(workerName)}/secrets`, {
         method: 'POST',
         body: JSON.stringify({ name: secretName, value }),
@@ -227,9 +228,90 @@ export async function deleteWorkerSecret(
     workerName: string,
     secretName: string
 ): Promise<ApiResponse<null>> {
+    invalidateCache(`/workers/${workerName}/secrets`)
     return apiFetch<null>(`/workers/${encodeURIComponent(workerName)}/secrets/${encodeURIComponent(secretName)}`, {
         method: 'DELETE',
     })
+}
+
+/**
+ * Worker settings types
+ */
+export interface WorkerSettings {
+    bindings: WorkerBinding[]
+    usage_model?: string
+    compatibility_date?: string
+    compatibility_flags?: string[]
+    logpush?: boolean
+}
+
+export interface WorkerSchedule {
+    cron: string
+    created_on: string
+    modified_on: string
+}
+
+export interface SubdomainStatus {
+    enabled: boolean
+}
+
+/**
+ * Get Worker settings (bindings, usage model, etc.)
+ */
+export async function getWorkerSettings(name: string, options?: FetchOptions): Promise<ApiResponse<WorkerSettings>> {
+    return apiFetch<WorkerSettings>(`/workers/${encodeURIComponent(name)}/settings`, {}, options)
+}
+
+/**
+ * Get Worker schedules (cron triggers)
+ */
+export async function getWorkerSchedules(name: string, options?: FetchOptions): Promise<ApiResponse<{ schedules: WorkerSchedule[] }>> {
+    return apiFetch<{ schedules: WorkerSchedule[] }>(`/workers/${encodeURIComponent(name)}/schedules`, {}, options)
+}
+
+/**
+ * Update Worker schedules (cron triggers)
+ */
+export async function updateWorkerSchedules(
+    name: string,
+    schedules: { cron: string }[]
+): Promise<ApiResponse<{ schedules: WorkerSchedule[] }>> {
+    invalidateCache(`/workers/${name}/schedules`)
+    return apiFetch<{ schedules: WorkerSchedule[] }>(`/workers/${encodeURIComponent(name)}/schedules`, {
+        method: 'PUT',
+        body: JSON.stringify({ schedules }),
+    })
+}
+
+/**
+ * Get Worker subdomain status (workers.dev enabled/disabled)
+ */
+export async function getWorkerSubdomain(name: string, options?: FetchOptions): Promise<ApiResponse<SubdomainStatus>> {
+    return apiFetch<SubdomainStatus>(`/workers/${encodeURIComponent(name)}/subdomain`, {}, options)
+}
+
+/**
+ * Update Worker subdomain status
+ */
+export async function updateWorkerSubdomain(
+    name: string,
+    enabled: boolean
+): Promise<ApiResponse<SubdomainStatus>> {
+    return apiFetch<SubdomainStatus>(`/workers/${encodeURIComponent(name)}/subdomain`, {
+        method: 'PUT',
+        body: JSON.stringify({ enabled }),
+    })
+}
+
+export interface AccountSubdomain {
+    subdomain: string
+}
+
+/**
+ * Get the account's workers.dev subdomain
+ */
+export async function getAccountSubdomain(options?: FetchOptions): Promise<ApiResponse<AccountSubdomain>> {
+    return apiFetch<AccountSubdomain>('/workers-subdomain', {}, options)
 }
 
 // ============================================================================

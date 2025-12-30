@@ -87,6 +87,60 @@ export async function handleWorkersRoutes(
         return cloneWorker(env, workerName, body.name)
     }
 
+    // GET /api/workers/:name/settings - Get script settings (bindings, usage model)
+    const settingsMatch = path.match(/^\/api\/workers\/([^/]+)\/settings$/)
+    if (settingsMatch && method === 'GET') {
+        const workerName = decodeURIComponent(settingsMatch[1] ?? '')
+        return getWorkerSettings(env, workerName, isLocal)
+    }
+
+    // GET/PUT /api/workers/:name/schedules - Cron triggers
+    const schedulesMatch = path.match(/^\/api\/workers\/([^/]+)\/schedules$/)
+    if (schedulesMatch) {
+        const workerName = decodeURIComponent(schedulesMatch[1] ?? '')
+        if (method === 'GET') {
+            return getWorkerSchedules(env, workerName, isLocal)
+        }
+        if (method === 'PUT') {
+            const body = await request.json() as { schedules: Array<{ cron: string }> }
+            return updateWorkerSchedules(env, workerName, body.schedules)
+        }
+    }
+
+    // POST /api/workers/:name/secrets - Add a secret
+    const secretsPostMatch = path.match(/^\/api\/workers\/([^/]+)\/secrets$/)
+    if (secretsPostMatch && method === 'POST') {
+        const workerName = decodeURIComponent(secretsPostMatch[1] ?? '')
+        const body = await request.json() as { name: string; value: string }
+        return addWorkerSecret(env, workerName, body.name, body.value)
+    }
+
+    // DELETE /api/workers/:name/secrets/:secretName - Delete a secret
+    const secretDeleteMatch = path.match(/^\/api\/workers\/([^/]+)\/secrets\/([^/]+)$/)
+    if (secretDeleteMatch && method === 'DELETE') {
+        const workerName = decodeURIComponent(secretDeleteMatch[1] ?? '')
+        const secretName = decodeURIComponent(secretDeleteMatch[2] ?? '')
+        return deleteWorkerSecret(env, workerName, secretName)
+    }
+
+    // GET/PUT /api/workers/:name/subdomain - workers.dev subdomain toggle
+    const subdomainMatch = path.match(/^\/api\/workers\/([^/]+)\/subdomain$/)
+    if (subdomainMatch) {
+        const workerName = decodeURIComponent(subdomainMatch[1] ?? '')
+        if (method === 'GET') {
+            return getWorkerSubdomain(env, workerName, isLocal)
+        }
+        if (method === 'PUT') {
+            const body = await request.json() as { enabled: boolean }
+            return updateWorkerSubdomain(env, workerName, body.enabled)
+        }
+    }
+
+    // GET /api/workers-subdomain - Get the account's workers.dev subdomain
+    if (path === '/api/workers-subdomain' && method === 'GET') {
+        return getAccountSubdomain(env, isLocal)
+    }
+
     return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -370,6 +424,286 @@ async function cloneWorker(env: Env, sourceName: string, newName: string): Promi
 
     return new Response(JSON.stringify(data), {
         status: createResponse.ok ? 200 : createResponse.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+// ============================================================================
+// Settings, Schedules, Secrets Management
+// ============================================================================
+
+interface WorkerSettings {
+    bindings: Array<{
+        name: string
+        type: string
+        bucket_name?: string
+        database_id?: string
+        namespace_id?: string
+        class_name?: string
+        queue_name?: string
+    }>
+    usage_model?: string
+    compatibility_date?: string
+    compatibility_flags?: string[]
+    logpush?: boolean
+}
+
+interface WorkerSchedule {
+    cron: string
+    created_on: string
+    modified_on: string
+}
+
+async function getWorkerSettings(env: Env, name: string, isLocal: boolean): Promise<Response> {
+    if (isLocal) {
+        return new Response(JSON.stringify({
+            success: true,
+            result: {
+                bindings: [
+                    { name: 'KV_STORE', type: 'kv_namespace', namespace_id: 'abc123' },
+                    { name: 'MY_BUCKET', type: 'r2_bucket', bucket_name: 'my-bucket' },
+                    { name: 'DB', type: 'd1', database_id: 'def456' },
+                ],
+                usage_model: 'standard',
+                compatibility_date: '2024-01-01',
+                compatibility_flags: ['nodejs_compat'],
+                logpush: false,
+            } satisfies WorkerSettings,
+        }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${name}/settings`,
+        {
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    )
+
+    // Handle non-JSON responses gracefully
+    const text = await response.text()
+    let data: { success: boolean; result?: WorkerSettings; errors?: unknown[] }
+    try {
+        data = JSON.parse(text) as { success: boolean; result?: WorkerSettings; errors?: unknown[] }
+    } catch {
+        console.error('[SETTINGS] Failed to parse response:', text.slice(0, 200))
+        return new Response(JSON.stringify({
+            success: false,
+            errors: [{ message: 'Failed to fetch settings from Cloudflare API' }],
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function getWorkerSchedules(env: Env, name: string, isLocal: boolean): Promise<Response> {
+    if (isLocal) {
+        return new Response(JSON.stringify({
+            success: true,
+            result: {
+                schedules: [
+                    { cron: '*/5 * * * *', created_on: new Date().toISOString(), modified_on: new Date().toISOString() },
+                    { cron: '0 0 * * *', created_on: new Date().toISOString(), modified_on: new Date().toISOString() },
+                ],
+            },
+        }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${name}/schedules`,
+        {
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    )
+
+    const data = await response.json() as { success: boolean; result?: { schedules: WorkerSchedule[] }; errors?: unknown[] }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function updateWorkerSchedules(
+    env: Env,
+    name: string,
+    schedules: Array<{ cron: string }>
+): Promise<Response> {
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${name}/schedules`,
+        {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(schedules),
+        }
+    )
+
+    const data = await response.json() as { success: boolean; result?: { schedules: WorkerSchedule[] }; errors?: unknown[] }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function addWorkerSecret(
+    env: Env,
+    workerName: string,
+    secretName: string,
+    secretValue: string
+): Promise<Response> {
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${workerName}/secrets`,
+        {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: secretName, text: secretValue, type: 'secret_text' }),
+        }
+    )
+
+    const data = await response.json() as { success: boolean; result?: unknown; errors?: unknown[] }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function deleteWorkerSecret(
+    env: Env,
+    workerName: string,
+    secretName: string
+): Promise<Response> {
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${workerName}/secrets/${secretName}`,
+        {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    )
+
+    const data = await response.json() as { success: boolean; errors?: unknown[] }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function getWorkerSubdomain(env: Env, name: string, isLocal: boolean): Promise<Response> {
+    if (isLocal) {
+        return new Response(JSON.stringify({
+            success: true,
+            result: { enabled: true },
+        }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${name}/subdomain`,
+        {
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    )
+
+    const data = await response.json() as { success: boolean; result?: { enabled: boolean }; errors?: unknown[] }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function updateWorkerSubdomain(
+    env: Env,
+    name: string,
+    enabled: boolean
+): Promise<Response> {
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${name}/subdomain`,
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ enabled }),
+        }
+    )
+
+    const data = await response.json() as { success: boolean; result?: { enabled: boolean }; errors?: unknown[] }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function getAccountSubdomain(env: Env, isLocal: boolean): Promise<Response> {
+    if (isLocal) {
+        return new Response(JSON.stringify({
+            success: true,
+            result: { subdomain: 'your-account' },
+        }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/subdomain`,
+        {
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    )
+
+    const text = await response.text()
+    let data: { success: boolean; result?: { subdomain: string }; errors?: unknown[] }
+    try {
+        data = JSON.parse(text) as { success: boolean; result?: { subdomain: string }; errors?: unknown[] }
+    } catch {
+        console.error('[SUBDOMAIN] Failed to parse response:', text.slice(0, 200))
+        return new Response(JSON.stringify({
+            success: false,
+            errors: [{ message: 'Failed to fetch subdomain from Cloudflare API' }],
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 }

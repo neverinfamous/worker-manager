@@ -11,6 +11,7 @@
         "lint": "eslint .",
         "typecheck": "tsc --noEmit",
         "check": "npm run lint && npm run typecheck",
+        "deploy": "npm run build && npx wrangler deploy",
         "test": "vitest",
         "test:run": "vitest run",
         "test:coverage": "vitest run --coverage"

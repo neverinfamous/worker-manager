@@ -7,10 +7,9 @@ import { formatRelativeTime } from '@/lib/format'
 interface WorkerCardProps {
     worker: Worker
     onSelect: (worker: Worker) => void
-    onSettings?: (worker: Worker) => void
 }
 
-export function WorkerCard({ worker, onSelect, onSettings }: WorkerCardProps): React.ReactNode {
+export function WorkerCard({ worker, onSelect }: WorkerCardProps): React.ReactNode {
     const handlers = worker.handlers ?? []
     const hasScheduled = handlers.includes('scheduled')
     const hasFetch = handlers.includes('fetch')
@@ -32,9 +31,14 @@ export function WorkerCard({ worker, onSelect, onSettings }: WorkerCardProps): R
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
+                    title="Open in Cloudflare Dashboard"
+                    aria-label="Open in Cloudflare Dashboard"
                     onClick={(e) => {
                         e.stopPropagation()
-                        onSettings?.(worker)
+                        window.open(
+                            `https://dash.cloudflare.com/?to=/:account/workers/services/view/${worker.name}`,
+                            '_blank'
+                        )
                     }}
                 >
                     <Settings className="h-4 w-4" />

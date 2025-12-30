@@ -42,8 +42,8 @@ export function formatDateTime(dateString: string): string {
 /**
  * Format bytes to human-readable size
  */
-export function formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 B'
+export function formatBytes(bytes: number | undefined | null): string {
+    if (bytes === undefined || bytes === null || bytes === 0) return '0 B'
 
     const units = ['B', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(1024))
@@ -55,7 +55,8 @@ export function formatBytes(bytes: number): string {
 /**
  * Format milliseconds to human-readable duration
  */
-export function formatDuration(ms: number): string {
+export function formatDuration(ms: number | undefined | null): string {
+    if (ms === undefined || ms === null) return '0ms'
     if (ms < 1000) {
         return `${ms.toFixed(1)}ms`
     } else if (ms < 60000) {
@@ -70,13 +71,15 @@ export function formatDuration(ms: number): string {
 /**
  * Format a number with commas
  */
-export function formatNumber(num: number): string {
+export function formatNumber(num: number | undefined | null): string {
+    if (num === undefined || num === null) return '0'
     return num.toLocaleString()
 }
 
 /**
  * Format a percentage
  */
-export function formatPercent(value: number, decimals = 1): string {
+export function formatPercent(value: number | undefined | null, decimals = 1): string {
+    if (value === undefined || value === null) return '0%'
     return `${value.toFixed(decimals)}%`
 }

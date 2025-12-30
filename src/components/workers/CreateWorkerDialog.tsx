@@ -79,9 +79,11 @@ export function CreateWorkerDialog({
 
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="name">Worker Name</Label>
+                            <Label htmlFor="worker-name">Worker Name</Label>
                             <Input
-                                id="name"
+                                id="worker-name"
+                                name="worker-name"
+                                autoComplete="off"
                                 placeholder="my-worker"
                                 value={name}
                                 onChange={(e) => { setName(e.target.value.toLowerCase()) }}

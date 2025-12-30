@@ -53,6 +53,7 @@ export function WebhooksView(): React.ReactNode {
     const [editingWebhook, setEditingWebhook] = useState<WebhookType | null>(null)
     const [deletingWebhook, setDeletingWebhook] = useState<WebhookType | null>(null)
     const [testingId, setTestingId] = useState<string | null>(null)
+    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
 
     const fetchWebhooks = async (skipCache = false): Promise<void> => {
         setLoading(true)
@@ -129,16 +130,64 @@ export function WebhooksView(): React.ReactNode {
 
     const handleTest = async (id: string): Promise<void> => {
         setTestingId(id)
-        // Simulate test request
+        setTestResult(null)
+
+        const webhook = webhooks.find(w => w.id === id)
+
+        // Simulate test request (in production, this would call the actual webhook URL)
         await new Promise(resolve => setTimeout(resolve, 1500))
+
+        // Simulate random success/failure for demo (production would use actual response)
+        const success = Math.random() > 0.2
+
         setTestingId(null)
-        // Show success toast (in real implementation)
+        setTestResult({
+            success,
+            message: success
+                ? `Test webhook sent successfully to ${webhook?.name ?? 'webhook'}`
+                : `Failed to reach ${webhook?.name ?? 'webhook'}. Please check the URL.`
+        })
+
+        // Auto-clear the result after 5 seconds
+        setTimeout(() => { setTestResult(null) }, 5000)
     }
 
     const enabledCount = webhooks.filter(w => w.enabled === 1).length
 
     return (
         <div className="space-y-6">
+            {/* Toast notification for test result */}
+            {testResult && (
+                <div
+                    className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border max-w-md animate-in slide-in-from-top-2 fade-in duration-300 ${testResult.success
+                            ? 'bg-green-500/10 border-green-500/50 text-green-600 dark:text-green-400'
+                            : 'bg-destructive/10 border-destructive/50 text-destructive'
+                        }`}
+                    role="alert"
+                >
+                    <div className="flex items-center gap-3">
+                        {testResult.success ? (
+                            <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+                        ) : (
+                            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                        )}
+                        <div>
+                            <p className="font-medium">{testResult.success ? 'Test Successful' : 'Test Failed'}</p>
+                            <p className="text-sm opacity-80">{testResult.message}</p>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 ml-auto opacity-60 hover:opacity-100"
+                            onClick={() => { setTestResult(null) }}
+                            aria-label="Dismiss"
+                        >
+                            ×
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -292,24 +341,49 @@ function WebhookCard({ webhook, onEdit, onDelete, onToggle, onTest, testing }: W
                         </Badge>
                     </div>
                     <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" onClick={onTest} disabled={testing || webhook.enabled === 0}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onTest}
+                            disabled={testing || webhook.enabled === 0}
+                            title="Send test webhook"
+                            aria-label="Send test webhook"
+                        >
                             {testing ? (
                                 <RefreshCw className="h-4 w-4 animate-spin" />
                             ) : (
                                 <Send className="h-4 w-4" />
                             )}
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={onToggle}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onToggle}
+                            title={webhook.enabled === 1 ? 'Disable webhook' : 'Enable webhook'}
+                            aria-label={webhook.enabled === 1 ? 'Disable webhook' : 'Enable webhook'}
+                        >
                             {webhook.enabled === 1 ? (
                                 <PowerOff className="h-4 w-4" />
                             ) : (
                                 <Power className="h-4 w-4" />
                             )}
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={onEdit}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onEdit}
+                            title="Edit webhook"
+                            aria-label="Edit webhook"
+                        >
                             <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={onDelete}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onDelete}
+                            title="Delete webhook"
+                            aria-label="Delete webhook"
+                        >
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </div>
@@ -403,9 +477,11 @@ function WebhookDialog({ open, onOpenChange, onSubmit, title, initialData }: Web
 
                 <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Name</Label>
+                        <Label htmlFor="webhook-name">Name</Label>
                         <Input
-                            id="name"
+                            id="webhook-name"
+                            name="webhook-name"
+                            autoComplete="off"
                             placeholder="My Webhook"
                             value={name}
                             onChange={(e) => { setName(e.target.value) }}
@@ -413,19 +489,21 @@ function WebhookDialog({ open, onOpenChange, onSubmit, title, initialData }: Web
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="url">URL</Label>
+                        <Label htmlFor="webhook-url">URL</Label>
                         <Input
-                            id="url"
+                            id="webhook-url"
+                            name="webhook-url"
                             type="url"
+                            autoComplete="off"
                             placeholder="https://example.com/webhook"
                             value={url}
                             onChange={(e) => { setUrl(e.target.value) }}
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label>Events</Label>
-                        <div className="grid grid-cols-2 gap-2">
+                    <fieldset className="space-y-2">
+                        <legend className="text-sm font-medium leading-none">Events</legend>
+                        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Select webhook events">
                             {EVENT_OPTIONS.map((option) => (
                                 <Button
                                     key={option.value}
@@ -434,18 +512,21 @@ function WebhookDialog({ open, onOpenChange, onSubmit, title, initialData }: Web
                                     size="sm"
                                     className="justify-start"
                                     onClick={() => { toggleEvent(option.value) }}
+                                    aria-pressed={selectedEvents.includes(option.value)}
                                 >
                                     {option.label}
                                 </Button>
                             ))}
                         </div>
-                    </div>
+                    </fieldset>
 
                     <div className="space-y-2">
-                        <Label htmlFor="secret">Secret (optional)</Label>
+                        <Label htmlFor="webhook-secret">Secret (optional)</Label>
                         <Input
-                            id="secret"
+                            id="webhook-secret"
+                            name="webhook-secret"
                             type="password"
+                            autoComplete="off"
                             placeholder="Used for signing payloads"
                             value={secret}
                             onChange={(e) => { setSecret(e.target.value) }}

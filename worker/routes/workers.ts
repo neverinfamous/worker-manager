@@ -7,6 +7,7 @@ import { corsHeaders } from '../utils/cors'
 
 interface WorkerScript {
     id: string
+    name?: string
     etag: string
     handlers: string[]
     modified_on: string
@@ -115,6 +116,15 @@ async function listWorkers(env: Env, isLocal: boolean): Promise<Response> {
     )
 
     const data = await response.json() as { success: boolean; result?: WorkerScript[]; errors?: unknown[] }
+
+    // Transform the response to add 'name' field from 'id' if not present
+    // The Cloudflare API returns scripts where 'id' is the script name
+    if (data.success && data.result) {
+        data.result = data.result.map((script) => ({
+            ...script,
+            name: script.id, // In CF API, the script id IS the name
+        }))
+    }
 
     return new Response(JSON.stringify(data), {
         status: response.ok ? 200 : response.status,

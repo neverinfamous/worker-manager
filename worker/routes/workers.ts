@@ -17,6 +17,20 @@ interface WorkerScript {
     compatibility_flags?: string[]
 }
 
+// Hidden workers - these won't appear in the UI
+// Add worker names here to hide them from the list
+const hiddenWorkers = [
+    'worker-manager',
+    'r2',
+    'kv-manager',
+    'do-manager',
+    'sqlite-wiki-search',
+    'd1-manager',
+    'container-manager',
+    'adamic-blog',
+    'do-test-worker',
+]
+
 export async function handleWorkersRoutes(
     request: Request,
     env: Env,
@@ -119,11 +133,14 @@ async function listWorkers(env: Env, isLocal: boolean): Promise<Response> {
 
     // Transform the response to add 'name' field from 'id' if not present
     // The Cloudflare API returns scripts where 'id' is the script name
+    // Also filter out hidden workers
     if (data.success && data.result) {
-        data.result = data.result.map((script) => ({
-            ...script,
-            name: script.id, // In CF API, the script id IS the name
-        }))
+        data.result = data.result
+            .filter((script) => !hiddenWorkers.includes(script.id))
+            .map((script) => ({
+                ...script,
+                name: script.id, // In CF API, the script id IS the name
+            }))
     }
 
     return new Response(JSON.stringify(data), {

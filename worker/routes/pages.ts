@@ -5,6 +5,14 @@
 import { type Env, CF_API } from '../types'
 import { corsHeaders } from '../utils/cors'
 
+// Hidden pages - these won't appear in the UI
+// Add project names here to hide them from the list
+const hiddenPages: string[] = [
+    // Add page project names here, e.g.:
+    // 'internal-docs',
+    // 'staging-site',
+]
+
 export async function handlePagesRoutes(
     request: Request,
     env: Env,
@@ -120,7 +128,12 @@ async function listPages(env: Env, isLocal: boolean): Promise<Response> {
         }
     )
 
-    const data = await response.json() as { success: boolean; result?: unknown[]; errors?: unknown[] }
+    const data = await response.json() as { success: boolean; result?: Array<{ name: string }>; errors?: unknown[] }
+
+    // Filter out hidden pages
+    if (data.success && data.result && hiddenPages.length > 0) {
+        data.result = data.result.filter((page) => !hiddenPages.includes(page.name))
+    }
 
     return new Response(JSON.stringify(data), {
         status: response.ok ? 200 : response.status,

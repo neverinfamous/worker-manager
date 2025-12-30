@@ -36,7 +36,7 @@ export function WorkerCard({ worker, onSelect }: WorkerCardProps): React.ReactNo
                     onClick={(e) => {
                         e.stopPropagation()
                         window.open(
-                            `https://dash.cloudflare.com/?to=/:account/workers/services/view/${worker.name}`,
+                            `https://dash.cloudflare.com/?to=/:account/workers/services/view/${worker.name}/production/settings`,
                             '_blank'
                         )
                     }}

@@ -65,11 +65,38 @@ export async function handleWorkersRoutes(
         }
     }
 
-    // GET /api/workers/:name/routes
+    // GET /api/workers/:name/routes - List routes
+    // POST /api/workers/:name/routes - Create a route
     const routesMatch = path.match(/^\/api\/workers\/([^/]+)\/routes$/)
-    if (routesMatch && method === 'GET') {
+    if (routesMatch) {
         const workerName = decodeURIComponent(routesMatch[1] ?? '')
-        return getWorkerRoutes(env, workerName, isLocal)
+        if (method === 'GET') {
+            return getWorkerRoutes(env, workerName, isLocal)
+        }
+        if (method === 'POST') {
+            const body = await request.json() as { pattern: string; zone_id: string }
+            return createWorkerRoute(env, workerName, body.pattern, body.zone_id)
+        }
+    }
+
+    // DELETE /api/workers/:name/routes/:routeId - Delete a route
+    const routeDeleteMatch = path.match(/^\/api\/workers\/([^/]+)\/routes\/([^/]+)$/)
+    if (routeDeleteMatch && method === 'DELETE') {
+        const routeId = decodeURIComponent(routeDeleteMatch[2] ?? '')
+        // Get the zone_id from query param since routes are zone-specific
+        const zoneId = url.searchParams.get('zone_id')
+        if (!zoneId) {
+            return new Response(JSON.stringify({ success: false, errors: [{ message: 'zone_id query parameter required' }] }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            })
+        }
+        return deleteWorkerRoute(env, routeId, zoneId)
+    }
+
+    // GET /api/zones - List available zones for route creation
+    if (path === '/api/zones' && method === 'GET') {
+        return listZones(env, isLocal)
     }
 
     // GET /api/workers/:name/secrets
@@ -696,6 +723,139 @@ async function getAccountSubdomain(env: Env, isLocal: boolean): Promise<Response
         return new Response(JSON.stringify({
             success: false,
             errors: [{ message: 'Failed to fetch subdomain from Cloudflare API' }],
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+// ============================================================================
+// Routes Management
+// ============================================================================
+
+interface Zone {
+    id: string
+    name: string
+    status: string
+}
+
+async function listZones(env: Env, isLocal: boolean): Promise<Response> {
+    if (isLocal) {
+        return new Response(JSON.stringify({
+            success: true,
+            result: [
+                { id: 'zone-1', name: 'example.com', status: 'active' },
+                { id: 'zone-2', name: 'test.com', status: 'active' },
+            ],
+        }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    const response = await fetch(
+        `${CF_API}/zones?status=active&per_page=100`,
+        {
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    )
+
+    const text = await response.text()
+    let data: { success: boolean; result?: Zone[]; errors?: unknown[] }
+    try {
+        data = JSON.parse(text) as { success: boolean; result?: Zone[]; errors?: unknown[] }
+    } catch {
+        console.error('[ZONES] Failed to parse response:', text.slice(0, 200))
+        return new Response(JSON.stringify({
+            success: false,
+            errors: [{ message: 'Failed to fetch zones from Cloudflare API' }],
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function createWorkerRoute(
+    env: Env,
+    workerName: string,
+    pattern: string,
+    zoneId: string
+): Promise<Response> {
+    const response = await fetch(
+        `${CF_API}/zones/${zoneId}/workers/routes`,
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                pattern,
+                script: workerName,
+            }),
+        }
+    )
+
+    const text = await response.text()
+    let data: { success: boolean; result?: { id: string; pattern: string }; errors?: unknown[] }
+    try {
+        data = JSON.parse(text) as { success: boolean; result?: { id: string; pattern: string }; errors?: unknown[] }
+    } catch {
+        console.error('[CREATE_ROUTE] Failed to parse response:', text.slice(0, 200))
+        return new Response(JSON.stringify({
+            success: false,
+            errors: [{ message: 'Failed to create route' }],
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function deleteWorkerRoute(
+    env: Env,
+    routeId: string,
+    zoneId: string
+): Promise<Response> {
+    const response = await fetch(
+        `${CF_API}/zones/${zoneId}/workers/routes/${routeId}`,
+        {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    )
+
+    const text = await response.text()
+    let data: { success: boolean; errors?: unknown[] }
+    try {
+        data = JSON.parse(text) as { success: boolean; errors?: unknown[] }
+    } catch {
+        console.error('[DELETE_ROUTE] Failed to parse response:', text.slice(0, 200))
+        return new Response(JSON.stringify({
+            success: false,
+            errors: [{ message: 'Failed to delete route' }],
         }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

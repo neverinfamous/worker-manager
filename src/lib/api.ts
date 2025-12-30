@@ -199,6 +199,48 @@ export async function getWorkerRoutes(name: string, options?: FetchOptions): Pro
     return apiFetch<WorkerRoute[]>(`/workers/${encodeURIComponent(name)}/routes`, {}, options)
 }
 
+export interface Zone {
+    id: string
+    name: string
+    status: string
+}
+
+/**
+ * List available zones
+ */
+export async function listZones(options?: FetchOptions): Promise<ApiResponse<Zone[]>> {
+    return apiFetch<Zone[]>('/zones', {}, options)
+}
+
+/**
+ * Create a Worker route
+ */
+export async function createWorkerRoute(
+    workerName: string,
+    pattern: string,
+    zoneId: string
+): Promise<ApiResponse<WorkerRoute>> {
+    invalidateCache(`/workers/${workerName}/routes`)
+    return apiFetch<WorkerRoute>(`/workers/${encodeURIComponent(workerName)}/routes`, {
+        method: 'POST',
+        body: JSON.stringify({ pattern, zone_id: zoneId }),
+    })
+}
+
+/**
+ * Delete a Worker route
+ */
+export async function deleteWorkerRoute(
+    workerName: string,
+    routeId: string,
+    zoneId: string
+): Promise<ApiResponse<null>> {
+    invalidateCache(`/workers/${workerName}/routes`)
+    return apiFetch<null>(`/workers/${encodeURIComponent(workerName)}/routes/${encodeURIComponent(routeId)}?zone_id=${encodeURIComponent(zoneId)}`, {
+        method: 'DELETE',
+    })
+}
+
 /**
  * Get Worker secrets (names only)
  */

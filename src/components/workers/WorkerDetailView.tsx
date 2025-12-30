@@ -39,6 +39,8 @@ import {
     setWorkerSecret,
     deleteWorkerSecret,
     updateWorkerSchedules,
+    createWorkerRoute,
+    deleteWorkerRoute,
     deleteWorker,
     cloneWorker
 } from '@/lib/api'
@@ -47,6 +49,7 @@ import { DeleteWorkerDialog } from './DeleteWorkerDialog'
 import { CloneWorkerDialog } from './CloneWorkerDialog'
 import { AddSecretDialog } from './AddSecretDialog'
 import { AddCronDialog } from './AddCronDialog'
+import { AddRouteDialog } from './AddRouteDialog'
 
 interface WorkerDetailViewProps {
     worker: Worker
@@ -90,12 +93,15 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
     const [showCloneDialog, setShowCloneDialog] = useState(false)
     const [showAddSecretDialog, setShowAddSecretDialog] = useState(false)
     const [showAddCronDialog, setShowAddCronDialog] = useState(false)
+    const [showAddRouteDialog, setShowAddRouteDialog] = useState(false)
     const [deleting, setDeleting] = useState(false)
     const [cloning, setCloning] = useState(false)
     const [addingSecret, setAddingSecret] = useState(false)
     const [addingCron, setAddingCron] = useState(false)
+    const [addingRoute, setAddingRoute] = useState(false)
     const [deletingSecret, setDeletingSecret] = useState<string | null>(null)
     const [deletingCron, setDeletingCron] = useState<string | null>(null)
+    const [deletingRoute, setDeletingRoute] = useState<string | null>(null)
     const [togglingSubdomain, setTogglingSubdomain] = useState(false)
 
     const fetchDetails = useCallback(async (): Promise<void> => {
@@ -196,6 +202,27 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
         const newSchedules = schedules.filter(s => s.cron !== cronToDelete).map(s => ({ cron: s.cron }))
         const response = await updateWorkerSchedules(worker.name, newSchedules)
         setDeletingCron(null)
+
+        if (response.success) {
+            void fetchDetails()
+        }
+    }
+
+    const handleAddRoute = async (pattern: string, zoneId: string): Promise<void> => {
+        setAddingRoute(true)
+        const response = await createWorkerRoute(worker.name, pattern, zoneId)
+        setAddingRoute(false)
+
+        if (response.success) {
+            setShowAddRouteDialog(false)
+            void fetchDetails()
+        }
+    }
+
+    const handleDeleteRoute = async (routeId: string, zoneId: string): Promise<void> => {
+        setDeletingRoute(routeId)
+        const response = await deleteWorkerRoute(worker.name, routeId, zoneId)
+        setDeletingRoute(null)
 
         if (response.success) {
             void fetchDetails()
@@ -329,9 +356,15 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
 
                 <TabsContent value="routes" className="mt-4">
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Routes</CardTitle>
-                            <CardDescription>URL patterns that trigger this Worker</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Routes</CardTitle>
+                                <CardDescription>URL patterns that trigger this Worker</CardDescription>
+                            </div>
+                            <Button size="sm" className="gap-2" onClick={() => { setShowAddRouteDialog(true) }}>
+                                <Plus className="h-4 w-4" />
+                                Add Route
+                            </Button>
                         </CardHeader>
                         <CardContent>
                             {loading ? (
@@ -342,10 +375,24 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                                 <div className="space-y-2">
                                     {routes.map((route) => (
                                         <div key={route.id} className="flex items-center justify-between p-3 rounded-lg border">
-                                            <code className="text-sm">{route.pattern}</code>
-                                            {route.zone_name && (
-                                                <Badge variant="secondary">{route.zone_name}</Badge>
-                                            )}
+                                            <div className="flex items-center gap-3">
+                                                <Link2 className="h-4 w-4 text-muted-foreground" />
+                                                <code className="text-sm">{route.pattern}</code>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {route.zone_name && (
+                                                    <Badge variant="secondary">{route.zone_name}</Badge>
+                                                )}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                                    disabled={deletingRoute === route.id}
+                                                    onClick={() => { void handleDeleteRoute(route.id, route.zone_id ?? '') }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -578,6 +625,14 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                 workerName={worker.name}
                 onConfirm={(cron) => { void handleAddCron(cron) }}
                 loading={addingCron}
+            />
+
+            <AddRouteDialog
+                open={showAddRouteDialog}
+                onOpenChange={setShowAddRouteDialog}
+                workerName={worker.name}
+                onConfirm={(pattern, zoneId) => { void handleAddRoute(pattern, zoneId) }}
+                loading={addingRoute}
             />
         </div>
     )

@@ -12,6 +12,9 @@ export interface Env {
     // KV Namespace for caching (optional)
     CACHE?: KVNamespace
 
+    // Static Assets (auto-injected by Wrangler)
+    ASSETS: { fetch: (request: Request) => Promise<Response> }
+
     // Secrets
     ACCOUNT_ID: string
     API_KEY: string

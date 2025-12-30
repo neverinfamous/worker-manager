@@ -1,0 +1,30 @@
+# Worker Manager - Wrangler Configuration
+name = "worker-manager"
+main = "worker/index.ts"
+compatibility_date = "2024-12-01"
+workers_dev = true
+
+# Custom domain route
+routes = [
+  { pattern = "worker.adamic.tech/*", zone_name = "adamic.tech" }
+]
+
+# Observability
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Static assets from Vite build
+[assets]
+directory = "./dist"
+
+# D1 Database for metadata (shadow registry)
+[[d1_databases]]
+binding = "METADATA"
+database_name = "worker-manager-metadata"
+database_id = "27277a64-47fe-45a5-8e40-aa3546d3fa88"
+
+# R2 Bucket for backups
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "worker-manager-backups"

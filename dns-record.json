@@ -1,0 +1,6 @@
+{
+    "type": "A",
+    "name": "worker",
+    "content": "192.0.2.1",
+    "proxied": true
+}

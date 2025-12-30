@@ -36,7 +36,7 @@ export function WorkerListView(): React.ReactNode {
     }, [])
 
     const filteredWorkers = workers.filter((worker) =>
-        worker.name.toLowerCase().includes(searchQuery.toLowerCase())
+        worker.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false
     )
 
     // Show detail view if a worker is selected

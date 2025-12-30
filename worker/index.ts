@@ -24,8 +24,10 @@ export default {
             return handleCORS()
         }
 
-        // Validate authentication (skip for local dev)
-        if (!isLocal) {
+        // Only validate auth for API routes (not static assets)
+        const isApiRoute = url.pathname.startsWith('/api/')
+
+        if (isApiRoute && !isLocal) {
             const authResult = await validateAuth(request, env)
             if (!authResult.valid) {
                 return new Response(JSON.stringify({ error: 'Unauthorized', message: authResult.error }), {
@@ -39,7 +41,7 @@ export default {
 
         try {
             // Route API requests
-            if (url.pathname.startsWith('/api/')) {
+            if (isApiRoute) {
                 return await handleApiRequest(request, env, url, isLocal, userEmail)
             }
 
@@ -54,7 +56,7 @@ export default {
                 })
             }
 
-            // Not found
+            // For static assets, return 404 - assets are served at the edge before hitting Worker
             return new Response(JSON.stringify({ error: 'Not found' }), {
                 status: 404,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },

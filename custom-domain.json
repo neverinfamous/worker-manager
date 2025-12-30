@@ -1,0 +1,6 @@
+{
+    "hostname": "worker.adamic.tech",
+    "zone_id": "9489b4ac5b0cc946ad7180dca6c8bf14",
+    "service": "worker-manager",
+    "environment": "production"
+}

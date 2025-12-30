@@ -11,11 +11,13 @@ interface AuthResult {
 }
 
 /**
- * Check if request is from local development
+ * Check if request is from local development or workers.dev (no Access protection)
  */
 export function isLocalDev(request: Request): boolean {
     const url = new URL(request.url)
-    return url.hostname === 'localhost' || url.hostname === '127.0.0.1'
+    return url.hostname === 'localhost' ||
+        url.hostname === '127.0.0.1' ||
+        url.hostname.endsWith('.workers.dev')
 }
 
 /**

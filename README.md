@@ -12,7 +12,7 @@ Worker Manager for Cloudflare — A full-featured, self-hosted web app for manag
 
 **[Live Demo](https://worker.adamic.tech/)** • **[Changelog](CHANGELOG.md)**
 
-**Tech Stack:** React 19 | Vite 7.3.0 | TypeScript 5.6 | Tailwind CSS 4 | Cloudflare Workers + Zero Trust
+**Tech Stack:** React 19.2.3 | Vite 7.3.0 | TypeScript 5.9.3 | Tailwind CSS 4.1.17 | Cloudflare Workers + Zero Trust
 
 > ⚠️ **Development Status:** This project is under active development. Features may change and some functionality may be incomplete.
 

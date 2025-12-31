@@ -114,11 +114,17 @@ export async function handleWorkersRoutes(
         return cloneWorker(env, workerName, body.name)
     }
 
-    // GET /api/workers/:name/settings - Get script settings (bindings, usage model)
+    // GET/PATCH /api/workers/:name/settings - Get or update script settings
     const settingsMatch = path.match(/^\/api\/workers\/([^/]+)\/settings$/)
-    if (settingsMatch && method === 'GET') {
+    if (settingsMatch) {
         const workerName = decodeURIComponent(settingsMatch[1] ?? '')
-        return getWorkerSettings(env, workerName, isLocal)
+        if (method === 'GET') {
+            return getWorkerSettings(env, workerName, isLocal)
+        }
+        if (method === 'PATCH') {
+            const body = await request.json() as WorkerSettingsUpdate
+            return updateWorkerSettings(env, workerName, body)
+        }
     }
 
     // GET/PUT /api/workers/:name/schedules - Cron triggers
@@ -533,6 +539,36 @@ interface WorkerSettings {
     compatibility_date?: string
     compatibility_flags?: string[]
     logpush?: boolean
+    observability?: {
+        enabled: boolean
+        head_sampling_rate?: number
+    }
+    placement?: {
+        mode: 'off' | 'smart'
+        status?: string
+    }
+    tail_consumers?: Array<{
+        service: string
+        environment?: string
+        namespace?: string
+    }>
+}
+
+interface WorkerSettingsUpdate {
+    compatibility_date?: string
+    compatibility_flags?: string[]
+    logpush?: boolean
+    observability?: {
+        enabled: boolean
+        head_sampling_rate?: number
+    }
+    placement?: {
+        mode: 'off' | 'smart'
+    }
+    tail_consumers?: Array<{
+        service: string
+        environment?: string
+    }>
 }
 
 interface WorkerSchedule {
@@ -552,9 +588,17 @@ async function getWorkerSettings(env: Env, name: string, isLocal: boolean): Prom
                     { name: 'DB', type: 'd1', database_id: 'def456' },
                 ],
                 usage_model: 'standard',
-                compatibility_date: '2024-01-01',
+                compatibility_date: '2024-12-01',
                 compatibility_flags: ['nodejs_compat'],
                 logpush: false,
+                observability: {
+                    enabled: false,
+                    head_sampling_rate: 0,
+                },
+                placement: {
+                    mode: 'off',
+                },
+                tail_consumers: [],
             } satisfies WorkerSettings,
         }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -581,6 +625,44 @@ async function getWorkerSettings(env: Env, name: string, isLocal: boolean): Prom
         return new Response(JSON.stringify({
             success: false,
             errors: [{ message: 'Failed to fetch settings from Cloudflare API' }],
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function updateWorkerSettings(
+    env: Env,
+    name: string,
+    settings: WorkerSettingsUpdate
+): Promise<Response> {
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${name}/settings`,
+        {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(settings),
+        }
+    )
+
+    const text = await response.text()
+    let data: { success: boolean; result?: WorkerSettings; errors?: unknown[] }
+    try {
+        data = JSON.parse(text) as { success: boolean; result?: WorkerSettings; errors?: unknown[] }
+    } catch {
+        console.error('[UPDATE_SETTINGS] Failed to parse response:', text.slice(0, 200))
+        return new Response(JSON.stringify({
+            success: false,
+            errors: [{ message: 'Failed to update settings' }],
         }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -13,7 +13,8 @@ import {
     Plus,
     Database,
     HardDrive,
-    Box
+    Box,
+    Pencil
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -36,13 +37,15 @@ import {
     getWorkerSubdomain,
     getAccountSubdomain,
     updateWorkerSubdomain,
+    updateWorkerSettings,
     setWorkerSecret,
     deleteWorkerSecret,
     updateWorkerSchedules,
     createWorkerRoute,
     deleteWorkerRoute,
     deleteWorker,
-    cloneWorker
+    cloneWorker,
+    listWorkers
 } from '@/lib/api'
 import { formatDateTime, formatRelativeTime } from '@/lib/format'
 import { DeleteWorkerDialog } from './DeleteWorkerDialog'
@@ -50,6 +53,9 @@ import { CloneWorkerDialog } from './CloneWorkerDialog'
 import { AddSecretDialog } from './AddSecretDialog'
 import { AddCronDialog } from './AddCronDialog'
 import { AddRouteDialog } from './AddRouteDialog'
+import { CompatibilityDateDialog } from './CompatibilityDateDialog'
+import { CompatibilityFlagsDialog } from './CompatibilityFlagsDialog'
+import { TailWorkerDialog } from './TailWorkerDialog'
 
 interface WorkerDetailViewProps {
     worker: Worker
@@ -88,12 +94,16 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
     const [settings, setSettings] = useState<WorkerSettings | null>(null)
     const [subdomain, setSubdomain] = useState<SubdomainStatus | null>(null)
     const [accountSubdomain, setAccountSubdomain] = useState<string>('your-subdomain')
+    const [allWorkers, setAllWorkers] = useState<Worker[]>([])
     const [loading, setLoading] = useState(true)
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
     const [showCloneDialog, setShowCloneDialog] = useState(false)
     const [showAddSecretDialog, setShowAddSecretDialog] = useState(false)
     const [showAddCronDialog, setShowAddCronDialog] = useState(false)
     const [showAddRouteDialog, setShowAddRouteDialog] = useState(false)
+    const [showCompatDateDialog, setShowCompatDateDialog] = useState(false)
+    const [showCompatFlagsDialog, setShowCompatFlagsDialog] = useState(false)
+    const [showTailWorkerDialog, setShowTailWorkerDialog] = useState(false)
     const [deleting, setDeleting] = useState(false)
     const [cloning, setCloning] = useState(false)
     const [addingSecret, setAddingSecret] = useState(false)
@@ -103,17 +113,19 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
     const [deletingCron, setDeletingCron] = useState<string | null>(null)
     const [deletingRoute, setDeletingRoute] = useState<string | null>(null)
     const [togglingSubdomain, setTogglingSubdomain] = useState(false)
+    const [updatingSettings, setUpdatingSettings] = useState(false)
 
     const fetchDetails = useCallback(async (): Promise<void> => {
         setLoading(true)
 
-        const [routesRes, secretsRes, settingsRes, schedulesRes, subdomainRes, accountSubdomainRes] = await Promise.all([
+        const [routesRes, secretsRes, settingsRes, schedulesRes, subdomainRes, accountSubdomainRes, workersRes] = await Promise.all([
             getWorkerRoutes(worker.name),
             getWorkerSecrets(worker.name),
             getWorkerSettings(worker.name),
             getWorkerSchedules(worker.name),
             getWorkerSubdomain(worker.name),
             getAccountSubdomain(),
+            listWorkers(),
         ])
 
         if (routesRes.success && routesRes.result) {
@@ -133,6 +145,9 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
         }
         if (accountSubdomainRes.success && accountSubdomainRes.result) {
             setAccountSubdomain(accountSubdomainRes.result.subdomain)
+        }
+        if (workersRes.success && workersRes.result) {
+            setAllWorkers(workersRes.result)
         }
 
         setLoading(false)
@@ -239,6 +254,101 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
 
         if (response.success && response.result) {
             setSubdomain(response.result)
+        }
+    }
+
+    const handleToggleObservability = async (enabled: boolean): Promise<void> => {
+        setUpdatingSettings(true)
+        const response = await updateWorkerSettings(worker.name, {
+            observability: {
+                enabled,
+                head_sampling_rate: enabled ? 1 : 0,
+            },
+        })
+        setUpdatingSettings(false)
+
+        if (response.success && response.result) {
+            setSettings(response.result)
+        }
+    }
+
+    const handleToggleTraces = async (enabled: boolean): Promise<void> => {
+        setUpdatingSettings(true)
+        const response = await updateWorkerSettings(worker.name, {
+            observability: {
+                enabled: settings?.observability?.enabled ?? false,
+                head_sampling_rate: enabled ? 1 : 0,
+            },
+        })
+        setUpdatingSettings(false)
+
+        if (response.success && response.result) {
+            setSettings(response.result)
+        }
+    }
+
+    const handleToggleLogpush = async (enabled: boolean): Promise<void> => {
+        setUpdatingSettings(true)
+        const response = await updateWorkerSettings(worker.name, {
+            logpush: enabled,
+        })
+        setUpdatingSettings(false)
+
+        if (response.success && response.result) {
+            setSettings(response.result)
+        }
+    }
+
+    const handleToggleSmartPlacement = async (enabled: boolean): Promise<void> => {
+        setUpdatingSettings(true)
+        const response = await updateWorkerSettings(worker.name, {
+            placement: {
+                mode: enabled ? 'smart' : 'off',
+            },
+        })
+        setUpdatingSettings(false)
+
+        if (response.success && response.result) {
+            setSettings(response.result)
+        }
+    }
+
+    const handleUpdateCompatibilityDate = async (date: string): Promise<void> => {
+        setUpdatingSettings(true)
+        const response = await updateWorkerSettings(worker.name, {
+            compatibility_date: date,
+        })
+        setUpdatingSettings(false)
+
+        if (response.success && response.result) {
+            setSettings(response.result)
+            setShowCompatDateDialog(false)
+        }
+    }
+
+    const handleUpdateCompatibilityFlags = async (flags: string[]): Promise<void> => {
+        setUpdatingSettings(true)
+        const response = await updateWorkerSettings(worker.name, {
+            compatibility_flags: flags,
+        })
+        setUpdatingSettings(false)
+
+        if (response.success && response.result) {
+            setSettings(response.result)
+            setShowCompatFlagsDialog(false)
+        }
+    }
+
+    const handleUpdateTailWorkers = async (tailConsumers: { service: string; environment?: string }[]): Promise<void> => {
+        setUpdatingSettings(true)
+        const response = await updateWorkerSettings(worker.name, {
+            tail_consumers: tailConsumers,
+        })
+        setUpdatingSettings(false)
+
+        if (response.success && response.result) {
+            setSettings(response.result)
+            setShowTailWorkerDialog(false)
         }
     }
 
@@ -520,6 +630,169 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                         </CardContent>
                     </Card>
 
+                    {/* Observability */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Observability</CardTitle>
+                            <CardDescription>Configure logging and tracing for this Worker</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Workers Logs</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Enable console logging for this Worker
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={settings?.observability?.enabled ?? false}
+                                    disabled={loading || updatingSettings}
+                                    onCheckedChange={(checked: boolean) => { void handleToggleObservability(checked) }}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Workers Traces</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Sample requests for tracing (head sampling)
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={(settings?.observability?.head_sampling_rate ?? 0) > 0}
+                                    disabled={loading || updatingSettings}
+                                    onCheckedChange={(checked: boolean) => { void handleToggleTraces(checked) }}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Logpush</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Push logs to an external destination
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={settings?.logpush ?? false}
+                                    disabled={loading || updatingSettings}
+                                    onCheckedChange={(checked: boolean) => { void handleToggleLogpush(checked) }}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Smart Placement */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Smart Placement</CardTitle>
+                            <CardDescription>Optimize Worker placement based on traffic patterns</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Enable Smart Placement</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {settings?.placement?.mode === 'smart'
+                                            ? `Smart Placement is active${settings?.placement?.status ? ` (${settings.placement.status})` : ''}`
+                                            : 'Run Worker at the edge closest to users'}
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={settings?.placement?.mode === 'smart'}
+                                    disabled={loading || updatingSettings}
+                                    onCheckedChange={(checked: boolean) => { void handleToggleSmartPlacement(checked) }}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Configuration */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Configuration</CardTitle>
+                            <CardDescription>Worker runtime settings</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium">Compatibility Date</p>
+                                    <p className="text-muted-foreground">{settings?.compatibility_date ?? worker.compatibility_date ?? 'Not set'}</p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => { setShowCompatDateDialog(true) }}
+                                    disabled={loading || updatingSettings}
+                                >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit
+                                </Button>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium">Compatibility Flags</p>
+                                    {(settings?.compatibility_flags ?? worker.compatibility_flags ?? []).length > 0 ? (
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                            {(settings?.compatibility_flags ?? worker.compatibility_flags ?? []).map((flag) => (
+                                                <Badge key={flag} variant="secondary" className="text-xs">{flag}</Badge>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-muted-foreground">No flags configured</p>
+                                    )}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => { setShowCompatFlagsDialog(true) }}
+                                    disabled={loading || updatingSettings}
+                                >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit
+                                </Button>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t">
+                                <div>
+                                    <p className="text-sm font-medium">Usage Model</p>
+                                    <p className="text-muted-foreground">{settings?.usage_model ?? worker.usage_model ?? 'Standard'}</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Tail Workers */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Tail Workers</CardTitle>
+                                <CardDescription>Workers that receive logs from this Worker</CardDescription>
+                            </div>
+                            <Button
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => { setShowTailWorkerDialog(true) }}
+                                disabled={loading || updatingSettings}
+                            >
+                                <Plus className="h-4 w-4" />
+                                Connect Worker
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {loading ? (
+                                <div className="h-12 bg-muted animate-pulse rounded" />
+                            ) : (settings?.tail_consumers ?? []).length === 0 ? (
+                                <p className="text-muted-foreground text-sm">No tail workers connected</p>
+                            ) : (
+                                <div className="flex flex-wrap gap-2">
+                                    {(settings?.tail_consumers ?? []).map((tc) => (
+                                        <Badge key={tc.service} variant="secondary">
+                                            {tc.service}
+                                            {tc.environment && <span className="text-xs text-muted-foreground ml-1">({tc.environment})</span>}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     {/* Bindings (Read-only) */}
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
@@ -559,40 +832,6 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                                     ))}
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Other Settings */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Configuration</CardTitle>
-                            <CardDescription>Worker configuration settings</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div>
-                                    <p className="text-sm font-medium">Compatibility Date</p>
-                                    <p className="text-muted-foreground">{settings?.compatibility_date ?? worker.compatibility_date ?? 'Not set'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium">Usage Model</p>
-                                    <p className="text-muted-foreground">{settings?.usage_model ?? worker.usage_model ?? 'Standard'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium">Logpush</p>
-                                    <p className="text-muted-foreground">{settings?.logpush ? 'Enabled' : 'Disabled'}</p>
-                                </div>
-                                {(settings?.compatibility_flags ?? worker.compatibility_flags ?? []).length > 0 ? (
-                                    <div className="md:col-span-2">
-                                        <p className="text-sm font-medium mb-2">Compatibility Flags</p>
-                                        <div className="flex flex-wrap gap-2">
-                                            {(settings?.compatibility_flags ?? worker.compatibility_flags ?? []).map((flag) => (
-                                                <Badge key={flag} variant="secondary">{flag}</Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ) : null}
-                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -636,6 +875,34 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                 workerName={worker.name}
                 onConfirm={(pattern, zoneId) => { void handleAddRoute(pattern, zoneId) }}
                 loading={addingRoute}
+            />
+
+            <CompatibilityDateDialog
+                open={showCompatDateDialog}
+                onOpenChange={setShowCompatDateDialog}
+                workerName={worker.name}
+                currentDate={settings?.compatibility_date ?? worker.compatibility_date ?? ''}
+                onConfirm={(date) => { void handleUpdateCompatibilityDate(date) }}
+                loading={updatingSettings}
+            />
+
+            <CompatibilityFlagsDialog
+                open={showCompatFlagsDialog}
+                onOpenChange={setShowCompatFlagsDialog}
+                workerName={worker.name}
+                currentFlags={settings?.compatibility_flags ?? worker.compatibility_flags ?? []}
+                onConfirm={(flags) => { void handleUpdateCompatibilityFlags(flags) }}
+                loading={updatingSettings}
+            />
+
+            <TailWorkerDialog
+                open={showTailWorkerDialog}
+                onOpenChange={setShowTailWorkerDialog}
+                workerName={worker.name}
+                currentTailConsumers={settings?.tail_consumers ?? []}
+                availableWorkers={allWorkers}
+                onConfirm={(tailConsumers) => { void handleUpdateTailWorkers(tailConsumers) }}
+                loading={updatingSettings}
             />
         </div>
     )

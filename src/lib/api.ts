@@ -285,6 +285,36 @@ export interface WorkerSettings {
     compatibility_date?: string
     compatibility_flags?: string[]
     logpush?: boolean
+    observability?: {
+        enabled: boolean
+        head_sampling_rate?: number
+    }
+    placement?: {
+        mode: 'off' | 'smart'
+        status?: string
+    }
+    tail_consumers?: {
+        service: string
+        environment?: string
+        namespace?: string
+    }[]
+}
+
+export interface WorkerSettingsUpdate {
+    compatibility_date?: string
+    compatibility_flags?: string[]
+    logpush?: boolean
+    observability?: {
+        enabled: boolean
+        head_sampling_rate?: number
+    }
+    placement?: {
+        mode: 'off' | 'smart'
+    }
+    tail_consumers?: {
+        service: string
+        environment?: string
+    }[]
 }
 
 export interface WorkerSchedule {
@@ -302,6 +332,20 @@ export interface SubdomainStatus {
  */
 export async function getWorkerSettings(name: string, options?: FetchOptions): Promise<ApiResponse<WorkerSettings>> {
     return apiFetch<WorkerSettings>(`/workers/${encodeURIComponent(name)}/settings`, {}, options)
+}
+
+/**
+ * Update Worker settings (observability, placement, compatibility, etc.)
+ */
+export async function updateWorkerSettings(
+    name: string,
+    settings: WorkerSettingsUpdate
+): Promise<ApiResponse<WorkerSettings>> {
+    invalidateCache(`/workers/${name}/settings`)
+    return apiFetch<WorkerSettings>(`/workers/${encodeURIComponent(name)}/settings`, {
+        method: 'PATCH',
+        body: JSON.stringify(settings),
+    })
 }
 
 /**

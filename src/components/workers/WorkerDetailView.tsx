@@ -309,10 +309,10 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
 
     const handleToggleSmartPlacement = async (enabled: boolean): Promise<void> => {
         setUpdatingSettings(true)
+        // When disabling, send empty object to reset placement
+        // When enabling, send mode: 'smart'
         const response = await updateWorkerSettings(worker.name, {
-            placement: {
-                mode: enabled ? 'smart' : 'off',
-            },
+            placement: enabled ? { mode: 'smart' } : {},
         })
         setUpdatingSettings(false)
 
@@ -624,12 +624,13 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                         <CardContent>
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label>Enable workers.dev URL</Label>
+                                    <Label htmlFor="workers-dev-toggle">Enable workers.dev URL</Label>
                                     <p className="text-sm text-muted-foreground">
                                         {subdomain?.enabled ? 'Worker is accessible at workers.dev' : 'Worker is not accessible at workers.dev'}
                                     </p>
                                 </div>
                                 <Switch
+                                    id="workers-dev-toggle"
                                     checked={subdomain?.enabled ?? false}
                                     disabled={loading || togglingSubdomain}
                                     onCheckedChange={(checked: boolean) => { void handleToggleSubdomain(checked) }}
@@ -647,12 +648,13 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                         <CardContent className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label>Workers Logs</Label>
+                                    <Label htmlFor="workers-logs-toggle">Workers Logs</Label>
                                     <p className="text-sm text-muted-foreground">
                                         Enable console logging for this Worker
                                     </p>
                                 </div>
                                 <Switch
+                                    id="workers-logs-toggle"
                                     checked={settings?.observability?.enabled ?? false}
                                     disabled={loading || updatingSettings}
                                     onCheckedChange={(checked: boolean) => { void handleToggleObservability(checked) }}
@@ -660,12 +662,13 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label>Workers Traces</Label>
+                                    <Label htmlFor="workers-traces-toggle">Workers Traces</Label>
                                     <p className="text-sm text-muted-foreground">
                                         Sample requests for tracing (head sampling)
                                     </p>
                                 </div>
                                 <Switch
+                                    id="workers-traces-toggle"
                                     checked={settings?.observability?.traces?.enabled ?? false}
                                     disabled={loading || updatingSettings}
                                     onCheckedChange={(checked: boolean) => { void handleToggleTraces(checked) }}
@@ -673,12 +676,13 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label>Logpush</Label>
+                                    <Label htmlFor="logpush-toggle">Logpush</Label>
                                     <p className="text-sm text-muted-foreground">
                                         Push logs to an external destination
                                     </p>
                                 </div>
                                 <Switch
+                                    id="logpush-toggle"
                                     checked={settings?.logpush ?? false}
                                     disabled={loading || updatingSettings}
                                     onCheckedChange={(checked: boolean) => { void handleToggleLogpush(checked) }}
@@ -696,7 +700,7 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                         <CardContent>
                             <div className="flex items-center justify-between">
                                 <div className="space-y-0.5">
-                                    <Label>Enable Smart Placement</Label>
+                                    <Label htmlFor="smart-placement-toggle">Enable Smart Placement</Label>
                                     <p className="text-sm text-muted-foreground">
                                         {settings?.placement?.mode === 'smart'
                                             ? `Smart Placement is active${settings?.placement?.status ? ` (${settings.placement.status})` : ''}`
@@ -704,6 +708,7 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                                     </p>
                                 </div>
                                 <Switch
+                                    id="smart-placement-toggle"
                                     checked={settings?.placement?.mode === 'smart'}
                                     disabled={loading || updatingSettings}
                                     onCheckedChange={(checked: boolean) => { void handleToggleSmartPlacement(checked) }}

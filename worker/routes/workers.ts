@@ -571,8 +571,8 @@ interface WorkerSettingsUpdate {
         }
     }
     placement?: {
-        mode: 'off' | 'smart'
-    }
+        mode: 'smart'
+    } | Record<string, never> | null
     tail_consumers?: Array<{
         service: string
         environment?: string

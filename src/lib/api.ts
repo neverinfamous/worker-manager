@@ -317,8 +317,8 @@ export interface WorkerSettingsUpdate {
         }
     }
     placement?: {
-        mode: 'off' | 'smart'
-    }
+        mode: 'smart'
+    } | Record<string, never> | null
     tail_consumers?: {
         service: string
         environment?: string

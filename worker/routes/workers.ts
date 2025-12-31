@@ -544,7 +544,7 @@ async function cloneWorker(env: Env, sourceName: string, newName: string): Promi
 
     // Find the main script file (usually index.js or worker.js)
     let mainModuleName = 'index.js'
-    let scriptValue: FormDataEntryValue | null = null
+    let scriptValue: string | File | null = null
 
     for (const [name, value] of sourceFormData.entries()) {
         if (name.endsWith('.js') || name.endsWith('.mjs')) {
@@ -593,7 +593,7 @@ async function cloneWorker(env: Env, sourceName: string, newName: string): Promi
         scriptContent = scriptValue
     } else {
         // It's a File - read its content
-        scriptContent = await scriptValue.text()
+        scriptContent = await (scriptValue as File).text()
     }
     const esModuleBlob = new Blob([scriptContent], { type: 'application/javascript+module' })
     newFormData.append(mainModuleName, esModuleBlob, mainModuleName)

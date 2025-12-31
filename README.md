@@ -22,14 +22,18 @@ Worker Manager for Cloudflare — A full-featured, self-hosted web app for manag
 
 ### Workers Management
 - 🔧 **List View** - Grid/list toggle with search and filtering
-- 📋 **Detail View** - Routes, secrets, cron triggers, and settings tabs
-- 🔗 **Quick Links** - Open workers directly in Cloudflare Dashboard
+- 📋 **Detail View** - Routes, secrets, cron triggers, bindings, and settings tabs
+- 🔗 **Routes Management** - Add and delete custom routes with zone selection
+- 🔐 **Secrets Management** - Add and delete worker secrets
+- ⏰ **Cron Triggers** - Add and delete scheduled triggers with validation
+- 🌐 **Subdomain Toggle** - Enable/disable workers.dev subdomain
+- 📊 **Bindings Display** - View R2, D1, KV, Queue, and DO bindings
 - ⚙️ **Operations** - Create, clone, and delete workers with R2 backup
 
 ### Pages Management
 - 📄 **Project Listing** - Deployment status badges and branch info
 - 🚀 **Deployment History** - View and rollback to previous deployments
-- 🌐 **Domain Management** - Custom domain display and configuration
+- 🌐 **Domain Management** - Add, view, and delete custom domains
 - 🛠️ **Build Configuration** - Build settings and source repository info
 
 ### Metrics Dashboard
@@ -274,10 +278,22 @@ worker-manager/
 |--------|----------|-------------|
 | GET | `/api/workers` | List all workers |
 | GET | `/api/workers/:name` | Get worker details |
+| POST | `/api/workers` | Create new worker |
 | DELETE | `/api/workers/:name` | Delete worker |
 | POST | `/api/workers/:name/clone` | Clone worker |
-| GET | `/api/workers/:name/routes` | Get worker routes |
+| GET | `/api/workers/:name/routes` | Get worker routes (aggregated from all zones) |
+| POST | `/api/workers/:name/routes` | Create route (requires pattern and zone_id) |
+| DELETE | `/api/workers/:name/routes/:id` | Delete route (requires zone_id query param) |
 | GET | `/api/workers/:name/secrets` | Get worker secrets |
+| POST | `/api/workers/:name/secrets` | Add worker secret |
+| DELETE | `/api/workers/:name/secrets/:name` | Delete worker secret |
+| GET | `/api/workers/:name/settings` | Get worker settings and bindings |
+| GET | `/api/workers/:name/schedules` | Get cron schedules |
+| PUT | `/api/workers/:name/schedules` | Update cron schedules |
+| GET | `/api/workers/:name/subdomain` | Get subdomain status |
+| PUT | `/api/workers/:name/subdomain` | Toggle subdomain |
+| GET | `/api/workers-subdomain` | Get account workers.dev subdomain |
+| GET | `/api/zones` | List available zones for route creation |
 
 #### Pages
 | Method | Endpoint | Description |
@@ -287,6 +303,8 @@ worker-manager/
 | DELETE | `/api/pages/:name` | Delete project |
 | GET | `/api/pages/:name/deployments` | Get deployments |
 | GET | `/api/pages/:name/domains` | Get custom domains |
+| POST | `/api/pages/:name/domains` | Add custom domain |
+| DELETE | `/api/pages/:name/domains/:domain` | Delete custom domain |
 | POST | `/api/pages/:name/rollback` | Rollback deployment |
 
 #### Metrics & Jobs

@@ -84,8 +84,8 @@ async function handleApiRequest(
 ): Promise<Response> {
     const path = url.pathname
 
-    // Workers routes
-    if (path.startsWith('/api/workers')) {
+    // Workers routes (includes zones for route management)
+    if (path.startsWith('/api/workers') || path === '/api/zones') {
         return handleWorkersRoutes(request, env, url, isLocal, userEmail)
     }
 

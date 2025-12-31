@@ -326,36 +326,96 @@ async function getWorker(env: Env, name: string, isLocal: boolean): Promise<Resp
     })
 }
 
+interface ZoneRoute {
+    id: string
+    pattern: string
+    script?: string
+}
+
 async function getWorkerRoutes(env: Env, name: string, isLocal: boolean): Promise<Response> {
     if (isLocal) {
         return new Response(JSON.stringify({
             success: true,
             result: [
-                { id: 'route-1', pattern: `${name}.example.com/*`, zone_name: 'example.com' },
+                { id: 'route-1', pattern: `${name}.example.com/*`, zone_id: 'mock-zone-id', zone_name: 'example.com' },
             ],
         }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
     }
 
-    // Get routes from all zones - this is a simplified implementation
-    // In production, you'd need to query all zones and filter by script name
-    const response = await fetch(
-        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${name}/routes`,
-        {
-            headers: {
-                'Authorization': `Bearer ${env.API_KEY}`,
-                'Content-Type': 'application/json',
-            },
+    // Routes are stored at the zone level, not the script level
+    // We need to query all zones and aggregate routes for this worker
+    try {
+        // First, get all zones for the account
+        const zonesResponse = await fetch(
+            `${CF_API}/zones?account.id=${env.ACCOUNT_ID}&per_page=50`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${env.API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        )
+
+        const zonesData = await zonesResponse.json() as { success: boolean; result?: Zone[] }
+
+        if (!zonesData.success || !zonesData.result) {
+            return new Response(JSON.stringify({
+                success: true,
+                result: [],
+            }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            })
         }
-    )
 
-    const data = await response.json() as { success: boolean; result?: unknown[]; errors?: unknown[] }
+        // For each zone, get routes and filter by worker name
+        const allRoutes: Array<{ id: string; pattern: string; zone_id: string; zone_name: string }> = []
 
-    return new Response(JSON.stringify(data), {
-        status: response.ok ? 200 : response.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+        for (const zone of zonesData.result) {
+            const routesResponse = await fetch(
+                `${CF_API}/zones/${zone.id}/workers/routes`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${env.API_KEY}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            )
+
+            const routesData = await routesResponse.json() as { success: boolean; result?: ZoneRoute[] }
+
+            if (routesData.success && routesData.result) {
+                // Filter routes that belong to this worker
+                const workerRoutes = routesData.result
+                    .filter(route => route.script === name)
+                    .map(route => ({
+                        id: route.id,
+                        pattern: route.pattern,
+                        zone_id: zone.id,
+                        zone_name: zone.name,
+                    }))
+
+                allRoutes.push(...workerRoutes)
+            }
+        }
+
+        return new Response(JSON.stringify({
+            success: true,
+            result: allRoutes,
+        }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    } catch (error) {
+        console.error('[ROUTES] Error fetching worker routes:', error)
+        return new Response(JSON.stringify({
+            success: false,
+            errors: [{ message: 'Failed to fetch routes' }],
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
 }
 
 async function getWorkerSecrets(env: Env, name: string, isLocal: boolean): Promise<Response> {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
     ArrowLeft,
     Globe,
@@ -9,7 +9,8 @@ import {
     RefreshCw,
     ExternalLink,
     Settings,
-    Undo2
+    Undo2,
+    Plus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,11 +22,14 @@ import {
     type PagesDomain,
     getPageDeployments,
     getPageDomains,
+    addPageDomain,
+    deletePageDomain,
     deletePage,
     rollbackPageDeployment
 } from '@/lib/api'
 import { formatDateTime, formatRelativeTime } from '@/lib/format'
 import { DeletePageDialog } from './DeletePageDialog'
+import { AddDomainDialog } from './AddDomainDialog'
 
 interface PageDetailViewProps {
     page: PagesProject
@@ -38,30 +42,36 @@ export function PageDetailView({ page, onBack, onRefresh }: PageDetailViewProps)
     const [domains, setDomains] = useState<PagesDomain[]>([])
     const [loading, setLoading] = useState(true)
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+    const [showAddDomainDialog, setShowAddDomainDialog] = useState(false)
     const [deleting, setDeleting] = useState(false)
+    const [addingDomain, setAddingDomain] = useState(false)
+    const [deletingDomain, setDeletingDomain] = useState<string | null>(null)
     const [rollingBack, setRollingBack] = useState<string | null>(null)
 
-    useEffect(() => {
-        const fetchDetails = async (): Promise<void> => {
-            setLoading(true)
+    const fetchDetails = useCallback(async (): Promise<void> => {
+        setLoading(true)
 
-            const [deploymentsRes, domainsRes] = await Promise.all([
-                getPageDeployments(page.name),
-                getPageDomains(page.name),
-            ])
+        const [deploymentsRes, domainsRes] = await Promise.all([
+            getPageDeployments(page.name),
+            getPageDomains(page.name),
+        ])
 
-            if (deploymentsRes.success && deploymentsRes.result) {
-                setDeployments(deploymentsRes.result)
-            }
-            if (domainsRes.success && domainsRes.result) {
-                setDomains(domainsRes.result)
-            }
-
-            setLoading(false)
+        if (deploymentsRes.success && deploymentsRes.result) {
+            setDeployments(deploymentsRes.result)
+        }
+        if (domainsRes.success && domainsRes.result) {
+            setDomains(domainsRes.result)
         }
 
-        void fetchDetails()
+        setLoading(false)
     }, [page.name])
+
+    useEffect(() => {
+        const initFetch = async (): Promise<void> => {
+            await fetchDetails()
+        }
+        void initFetch()
+    }, [fetchDetails])
 
     const handleDelete = async (): Promise<void> => {
         setDeleting(true)
@@ -81,6 +91,27 @@ export function PageDetailView({ page, onBack, onRefresh }: PageDetailViewProps)
 
         if (response.success) {
             onRefresh()
+        }
+    }
+
+    const handleAddDomain = async (domain: string): Promise<void> => {
+        setAddingDomain(true)
+        const response = await addPageDomain(page.name, domain)
+        setAddingDomain(false)
+
+        if (response.success) {
+            setShowAddDomainDialog(false)
+            void fetchDetails()
+        }
+    }
+
+    const handleDeleteDomain = async (domainName: string): Promise<void> => {
+        setDeletingDomain(domainName)
+        const response = await deletePageDomain(page.name, domainName)
+        setDeletingDomain(null)
+
+        if (response.success) {
+            void fetchDetails()
         }
     }
 
@@ -283,9 +314,15 @@ export function PageDetailView({ page, onBack, onRefresh }: PageDetailViewProps)
 
                 <TabsContent value="domains" className="mt-4">
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Custom Domains</CardTitle>
-                            <CardDescription>Custom domains pointing to this project</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Custom Domains</CardTitle>
+                                <CardDescription>Custom domains pointing to this project</CardDescription>
+                            </div>
+                            <Button size="sm" className="gap-2" onClick={() => { setShowAddDomainDialog(true) }}>
+                                <Plus className="h-4 w-4" />
+                                Add Domain
+                            </Button>
                         </CardHeader>
                         <CardContent>
                             {loading ? (
@@ -296,13 +333,24 @@ export function PageDetailView({ page, onBack, onRefresh }: PageDetailViewProps)
                                 <div className="space-y-2">
                                     {domains.map((domain) => (
                                         <div key={domain.id} className="flex items-center justify-between p-3 rounded-lg border">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-3">
                                                 <Link2 className="h-4 w-4 text-muted-foreground" />
                                                 <code className="text-sm">{domain.name}</code>
                                             </div>
-                                            <Badge variant={domain.status === 'active' ? 'success' : 'secondary'}>
-                                                {domain.status}
-                                            </Badge>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={domain.status === 'active' ? 'success' : 'secondary'}>
+                                                    {domain.status}
+                                                </Badge>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                                    disabled={deletingDomain === domain.name}
+                                                    onClick={() => { void handleDeleteDomain(domain.name) }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -353,6 +401,14 @@ export function PageDetailView({ page, onBack, onRefresh }: PageDetailViewProps)
                 pageName={page.name}
                 onConfirm={() => { void handleDelete() }}
                 loading={deleting}
+            />
+
+            <AddDomainDialog
+                open={showAddDomainDialog}
+                onOpenChange={setShowAddDomainDialog}
+                projectName={page.name}
+                onConfirm={(domain) => { void handleAddDomain(domain) }}
+                loading={addingDomain}
             />
         </div>
     )

@@ -110,7 +110,10 @@ export function JobsView(): React.ReactNode {
     }
 
     useEffect(() => {
-        void fetchJobs()
+        const initFetch = async (): Promise<void> => {
+            await fetchJobs()
+        }
+        void initFetch()
     }, [])
 
     const filteredJobs = jobs.filter((job) => {

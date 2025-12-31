@@ -464,6 +464,33 @@ export async function getPageDomains(
 }
 
 /**
+ * Add a custom domain to a Pages project
+ */
+export async function addPageDomain(
+    projectName: string,
+    domain: string
+): Promise<ApiResponse<PagesDomain>> {
+    invalidateCache(`/pages/${projectName}/domains`)
+    return apiFetch<PagesDomain>(`/pages/${encodeURIComponent(projectName)}/domains`, {
+        method: 'POST',
+        body: JSON.stringify({ domain }),
+    })
+}
+
+/**
+ * Delete a custom domain from a Pages project
+ */
+export async function deletePageDomain(
+    projectName: string,
+    domainName: string
+): Promise<ApiResponse<null>> {
+    invalidateCache(`/pages/${projectName}/domains`)
+    return apiFetch<null>(`/pages/${encodeURIComponent(projectName)}/domains/${encodeURIComponent(domainName)}`, {
+        method: 'DELETE',
+    })
+}
+
+/**
  * Rollback a Pages deployment
  */
 export async function rollbackPageDeployment(

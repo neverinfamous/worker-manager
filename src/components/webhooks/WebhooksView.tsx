@@ -102,7 +102,10 @@ export function WebhooksView(): React.ReactNode {
     }
 
     useEffect(() => {
-        void fetchWebhooks()
+        const initFetch = async (): Promise<void> => {
+            await fetchWebhooks()
+        }
+        void initFetch()
     }, [])
 
     const handleCreate = async (data: { name: string; url: string; events: string[] }): Promise<void> => {
@@ -137,8 +140,8 @@ export function WebhooksView(): React.ReactNode {
         // Simulate test request (in production, this would call the actual webhook URL)
         await new Promise(resolve => setTimeout(resolve, 1500))
 
-        // Simulate random success/failure for demo (production would use actual response)
-        const success = Math.random() > 0.2
+        // Demo mode: always succeed (production would use actual HTTP response)
+        const success = true
 
         setTestingId(null)
         setTestResult({
@@ -160,8 +163,8 @@ export function WebhooksView(): React.ReactNode {
             {testResult && (
                 <div
                     className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border max-w-md animate-in slide-in-from-top-2 fade-in duration-300 ${testResult.success
-                            ? 'bg-green-500/10 border-green-500/50 text-green-600 dark:text-green-400'
-                            : 'bg-destructive/10 border-destructive/50 text-destructive'
+                        ? 'bg-green-500/10 border-green-500/50 text-green-600 dark:text-green-400'
+                        : 'bg-destructive/10 border-destructive/50 text-destructive'
                         }`}
                     role="alert"
                 >
@@ -271,6 +274,7 @@ export function WebhooksView(): React.ReactNode {
 
             {/* Create Dialog */}
             <WebhookDialog
+                key={showCreateDialog ? 'create' : 'create-closed'}
                 open={showCreateDialog}
                 onOpenChange={setShowCreateDialog}
                 onSubmit={(data) => { void handleCreate(data) }}
@@ -279,6 +283,7 @@ export function WebhooksView(): React.ReactNode {
 
             {/* Edit Dialog */}
             <WebhookDialog
+                key={editingWebhook?.id ?? 'edit-closed'}
                 open={editingWebhook !== null}
                 onOpenChange={(open) => { if (!open) setEditingWebhook(null) }}
                 onSubmit={(data) => { if (editingWebhook) void handleUpdate(editingWebhook.id, { ...data, events: JSON.stringify(data.events) }) }}
@@ -435,16 +440,6 @@ function WebhookDialog({ open, onOpenChange, onSubmit, title, initialData }: Web
         initialData ? JSON.parse(initialData.events) as string[] : []
     )
     const [secret, setSecret] = useState('')
-
-    // Reset form when dialog opens/closes
-    useEffect(() => {
-        if (open) {
-            setName(initialData?.name ?? '')
-            setUrl(initialData?.url ?? '')
-            setSelectedEvents(initialData ? JSON.parse(initialData.events) as string[] : [])
-            setSecret('')
-        }
-    }, [open, initialData])
 
     const toggleEvent = (event: string): void => {
         if (selectedEvents.includes(event)) {

@@ -1,6 +1,8 @@
 import {
     useEffect,
+    useLayoutEffect,
     useState,
+    useMemo,
     type ReactNode,
 } from 'react'
 import { type Theme } from './theme-types'
@@ -24,36 +26,32 @@ function getStoredTheme(): Theme {
 
 export function ThemeProvider({ children }: { children: ReactNode }): ReactNode {
     const [theme, setThemeState] = useState<Theme>(getStoredTheme)
-    const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(
-        theme === 'system' ? getSystemTheme() : theme
+    const [systemTheme, setSystemTheme] = useState<'dark' | 'light'>(getSystemTheme)
+
+    // Compute resolved theme from theme and systemTheme without useState
+    const resolvedTheme = useMemo<'dark' | 'light'>(
+        () => (theme === 'system' ? systemTheme : theme),
+        [theme, systemTheme]
     )
 
-    useEffect(() => {
+    // Apply theme class to document (synchronous effect to avoid flash)
+    useLayoutEffect(() => {
         const root = window.document.documentElement
-        const resolved = theme === 'system' ? getSystemTheme() : theme
-
         root.classList.remove('light', 'dark')
-        root.classList.add(resolved)
-        setResolvedTheme(resolved)
-    }, [theme])
+        root.classList.add(resolvedTheme)
+    }, [resolvedTheme])
 
     useEffect(() => {
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
         const handleChange = (): void => {
-            if (theme === 'system') {
-                const resolved = getSystemTheme()
-                const root = window.document.documentElement
-                root.classList.remove('light', 'dark')
-                root.classList.add(resolved)
-                setResolvedTheme(resolved)
-            }
+            setSystemTheme(getSystemTheme())
         }
 
         mediaQuery.addEventListener('change', handleChange)
         return () => {
             mediaQuery.removeEventListener('change', handleChange)
         }
-    }, [theme])
+    }, [])
 
     const setTheme = (newTheme: Theme): void => {
         localStorage.setItem('worker-manager-theme', newTheme)

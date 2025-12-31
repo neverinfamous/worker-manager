@@ -48,11 +48,26 @@ export async function handlePagesRoutes(
         return getPageDeployments(env, pageName, isLocal)
     }
 
-    // GET /api/pages/:name/domains
+    // GET /api/pages/:name/domains - List domains
+    // POST /api/pages/:name/domains - Add a domain
     const domainsMatch = path.match(/^\/api\/pages\/([^/]+)\/domains$/)
-    if (domainsMatch && method === 'GET') {
+    if (domainsMatch) {
         const pageName = decodeURIComponent(domainsMatch[1] ?? '')
-        return getPageDomains(env, pageName, isLocal)
+        if (method === 'GET') {
+            return getPageDomains(env, pageName, isLocal)
+        }
+        if (method === 'POST') {
+            const body = await request.json() as { domain: string }
+            return addPageDomain(env, pageName, body.domain)
+        }
+    }
+
+    // DELETE /api/pages/:name/domains/:domainName - Delete a domain
+    const domainDeleteMatch = path.match(/^\/api\/pages\/([^/]+)\/domains\/([^/]+)$/)
+    if (domainDeleteMatch && method === 'DELETE') {
+        const pageName = decodeURIComponent(domainDeleteMatch[1] ?? '')
+        const domainName = decodeURIComponent(domainDeleteMatch[2] ?? '')
+        return deletePageDomain(env, pageName, domainName)
     }
 
     // POST /api/pages/:name/rollback
@@ -310,6 +325,77 @@ async function rollbackDeployment(env: Env, projectName: string, deploymentId: s
     )
 
     const data = await response.json() as { success: boolean; result?: unknown; errors?: unknown[] }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+// ============================================================================
+// Domain Management
+// ============================================================================
+
+async function addPageDomain(env: Env, projectName: string, domain: string): Promise<Response> {
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/pages/projects/${projectName}/domains`,
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: domain }),
+        }
+    )
+
+    const text = await response.text()
+    let data: { success: boolean; result?: unknown; errors?: unknown[] }
+    try {
+        data = JSON.parse(text) as { success: boolean; result?: unknown; errors?: unknown[] }
+    } catch {
+        console.error('[ADD_DOMAIN] Failed to parse response:', text.slice(0, 200))
+        return new Response(JSON.stringify({
+            success: false,
+            errors: [{ message: 'Failed to add domain' }],
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    return new Response(JSON.stringify(data), {
+        status: response.ok ? 200 : response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+}
+
+async function deletePageDomain(env: Env, projectName: string, domainName: string): Promise<Response> {
+    const response = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/pages/projects/${projectName}/domains/${domainName}`,
+        {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    )
+
+    const text = await response.text()
+    let data: { success: boolean; errors?: unknown[] }
+    try {
+        data = JSON.parse(text) as { success: boolean; errors?: unknown[] }
+    } catch {
+        console.error('[DELETE_DOMAIN] Failed to parse response:', text.slice(0, 200))
+        return new Response(JSON.stringify({
+            success: false,
+            errors: [{ message: 'Failed to delete domain' }],
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
 
     return new Response(JSON.stringify(data), {
         status: response.ok ? 200 : response.status,

@@ -30,7 +30,10 @@ export function PageListView(): React.ReactNode {
     }
 
     useEffect(() => {
-        void fetchPages()
+        const initFetch = async (): Promise<void> => {
+            await fetchPages()
+        }
+        void initFetch()
     }, [])
 
     const filteredPages = pages.filter((page) =>

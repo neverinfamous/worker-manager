@@ -43,7 +43,10 @@ export function MetricsView(): React.ReactNode {
     }
 
     useEffect(() => {
-        void fetchMetrics(timeRange)
+        const initFetch = async (): Promise<void> => {
+            await fetchMetrics(timeRange)
+        }
+        void initFetch()
     }, [timeRange])
 
     const handleRefresh = (): void => {

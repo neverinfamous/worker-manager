@@ -139,7 +139,10 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
     }, [worker.name])
 
     useEffect(() => {
-        void fetchDetails()
+        const initFetch = async (): Promise<void> => {
+            await fetchDetails()
+        }
+        void initFetch()
     }, [fetchDetails])
 
     const handleDelete = async (): Promise<void> => {

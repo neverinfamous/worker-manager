@@ -32,7 +32,10 @@ export function WorkerListView(): React.ReactNode {
     }
 
     useEffect(() => {
-        void fetchWorkers()
+        const initFetch = async (): Promise<void> => {
+            await fetchWorkers()
+        }
+        void initFetch()
     }, [])
 
     const filteredWorkers = workers.filter((worker) =>

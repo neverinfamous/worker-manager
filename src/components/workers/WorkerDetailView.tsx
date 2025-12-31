@@ -678,7 +678,16 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                                 <div className="space-y-0.5">
                                     <Label htmlFor="logpush-toggle">Logpush</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Push logs to an external destination
+                                        Push logs to an external destination.{' '}
+                                        <a
+                                            href="https://dash.cloudflare.com/?to=/:account/logs"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline inline-flex items-center gap-1"
+                                        >
+                                            Configure Logpush jobs
+                                            <ExternalLink className="h-3 w-3" />
+                                        </a>
                                     </p>
                                 </div>
                                 <Switch

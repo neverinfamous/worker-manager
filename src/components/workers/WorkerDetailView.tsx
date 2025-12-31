@@ -774,7 +774,18 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                             <div className="flex items-center justify-between pt-2 border-t">
                                 <div>
                                     <p className="text-sm font-medium">Usage Model</p>
-                                    <p className="text-muted-foreground">{settings?.usage_model ?? worker.usage_model ?? 'Standard'}</p>
+                                    <p className="text-muted-foreground">
+                                        {settings?.usage_model ?? worker.usage_model ?? 'Standard'}.{' '}
+                                        <a
+                                            href={`https://dash.cloudflare.com/?to=/:account/workers/services/view/${worker.name}/production/settings`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline inline-flex items-center gap-1"
+                                        >
+                                            Change in Dashboard
+                                            <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                    </p>
                                 </div>
                             </div>
                         </CardContent>

@@ -478,9 +478,9 @@ async function deleteWorker(env: Env, name: string): Promise<Response> {
 }
 
 async function cloneWorker(env: Env, sourceName: string, newName: string): Promise<Response> {
-    // Step 1: Get the source worker script
-    const getResponse = await fetch(
-        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${sourceName}`,
+    // Step 1: Get the source worker settings to get main_module name and compatibility settings
+    const settingsResponse = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${sourceName}/settings`,
         {
             headers: {
                 'Authorization': `Bearer ${env.API_KEY}`,
@@ -488,32 +488,132 @@ async function cloneWorker(env: Env, sourceName: string, newName: string): Promi
         }
     )
 
-    if (!getResponse.ok) {
+    if (!settingsResponse.ok) {
+        const errorText = await settingsResponse.text()
+        console.error('[CLONE] Failed to fetch source worker settings:', errorText.slice(0, 200))
         return new Response(JSON.stringify({
             success: false,
-            error: 'Failed to fetch source worker',
+            error: 'Failed to fetch source worker settings',
         }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
     }
 
-    const scriptContent = await getResponse.text()
+    const settingsData = await settingsResponse.json() as {
+        result?: {
+            compatibility_date?: string
+            compatibility_flags?: string[]
+        }
+    }
 
-    // Step 2: Create new worker with the same script
+    const compatibilityDate = settingsData.result?.compatibility_date ?? '2024-12-01'
+    const compatibilityFlags = settingsData.result?.compatibility_flags ?? []
+
+    // Step 2: Get the source worker script content
+    // Use the regular endpoint which returns just JavaScript for simple workers
+    const getResponse = await fetch(
+        `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${sourceName}`,
+        {
+            headers: {
+                'Authorization': `Bearer ${env.API_KEY}`,
+                'Accept': 'application/javascript',
+            },
+        }
+    )
+
+    if (!getResponse.ok) {
+        const errorText = await getResponse.text()
+        console.error('[CLONE] Failed to fetch source worker script:', errorText.slice(0, 200))
+        return new Response(JSON.stringify({
+            success: false,
+            error: 'Failed to fetch source worker script',
+        }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    // The API returns multipart/form-data - parse it to get the script parts
+    const sourceFormData = await getResponse.formData()
+
+    // Debug: Log what parts we received
+    const partNames: string[] = []
+    sourceFormData.forEach((_, name) => { partNames.push(name) })
+    console.log('[CLONE] Received parts:', partNames.join(', '))
+
+    // Find the main script file (usually index.js or worker.js)
+    let mainModuleName = 'index.js'
+    let scriptValue: FormDataEntryValue | null = null
+
+    for (const [name, value] of sourceFormData.entries()) {
+        if (name.endsWith('.js') || name.endsWith('.mjs')) {
+            mainModuleName = name
+            scriptValue = value
+            console.log('[CLONE] Found main module:', name, 'Type:', typeof value)
+            break
+        }
+    }
+
+    if (!scriptValue) {
+        // Fallback: try to get any file
+        const firstEntry = sourceFormData.entries().next()
+        if (!firstEntry.done) {
+            mainModuleName = firstEntry.value[0]
+            scriptValue = firstEntry.value[1]
+            console.log('[CLONE] Using first part as main module:', mainModuleName)
+        }
+    }
+
+    if (!scriptValue) {
+        console.error('[CLONE] No script content found in response')
+        return new Response(JSON.stringify({
+            success: false,
+            error: 'No script content found in source worker',
+        }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+    }
+
+    // Step 3: Create new worker with the extracted script
+    const newFormData = new FormData()
+
+    // Add metadata for ES modules
+    const metadata = {
+        main_module: mainModuleName,
+        compatibility_date: compatibilityDate,
+        compatibility_flags: compatibilityFlags,
+    }
+    newFormData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }))
+
+    // Handle both string and File/Blob values from FormData
+    let scriptContent: string
+    if (typeof scriptValue === 'string') {
+        scriptContent = scriptValue
+    } else {
+        // It's a File - read its content
+        scriptContent = await scriptValue.text()
+    }
+    const esModuleBlob = new Blob([scriptContent], { type: 'application/javascript+module' })
+    newFormData.append(mainModuleName, esModuleBlob, mainModuleName)
+
     const createResponse = await fetch(
         `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${newName}`,
         {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${env.API_KEY}`,
-                'Content-Type': 'application/javascript',
             },
-            body: scriptContent,
+            body: newFormData,
         }
     )
 
     const data = await createResponse.json() as { success: boolean; result?: unknown; errors?: unknown[] }
+
+    if (!createResponse.ok) {
+        console.error('[CLONE] Failed to create worker:', JSON.stringify(data.errors))
+    }
 
     return new Response(JSON.stringify(data), {
         status: createResponse.ok ? 200 : createResponse.status,

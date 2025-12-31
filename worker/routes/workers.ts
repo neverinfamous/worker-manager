@@ -542,6 +542,10 @@ interface WorkerSettings {
     observability?: {
         enabled: boolean
         head_sampling_rate?: number
+        traces?: {
+            enabled: boolean
+            head_sampling_rate?: number
+        }
     }
     placement?: {
         mode: 'off' | 'smart'
@@ -559,8 +563,12 @@ interface WorkerSettingsUpdate {
     compatibility_flags?: string[]
     logpush?: boolean
     observability?: {
-        enabled: boolean
+        enabled?: boolean
         head_sampling_rate?: number
+        traces?: {
+            enabled?: boolean
+            head_sampling_rate?: number
+        }
     }
     placement?: {
         mode: 'off' | 'smart'
@@ -594,6 +602,10 @@ async function getWorkerSettings(env: Env, name: string, isLocal: boolean): Prom
                 observability: {
                     enabled: false,
                     head_sampling_rate: 0,
+                    traces: {
+                        enabled: false,
+                        head_sampling_rate: 0,
+                    },
                 },
                 placement: {
                     mode: 'off',
@@ -642,15 +654,18 @@ async function updateWorkerSettings(
     name: string,
     settings: WorkerSettingsUpdate
 ): Promise<Response> {
+    // Cloudflare API requires multipart/form-data with a "settings" part containing JSON
+    const formData = new FormData()
+    formData.append('settings', new Blob([JSON.stringify(settings)], { type: 'application/json' }))
+
     const response = await fetch(
         `${CF_API}/accounts/${env.ACCOUNT_ID}/workers/scripts/${name}/settings`,
         {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${env.API_KEY}`,
-                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(settings),
+            body: formData,
         }
     )
 

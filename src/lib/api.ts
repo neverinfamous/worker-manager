@@ -288,6 +288,10 @@ export interface WorkerSettings {
     observability?: {
         enabled: boolean
         head_sampling_rate?: number
+        traces?: {
+            enabled: boolean
+            head_sampling_rate?: number
+        }
     }
     placement?: {
         mode: 'off' | 'smart'
@@ -305,8 +309,12 @@ export interface WorkerSettingsUpdate {
     compatibility_flags?: string[]
     logpush?: boolean
     observability?: {
-        enabled: boolean
+        enabled?: boolean
         head_sampling_rate?: number
+        traces?: {
+            enabled?: boolean
+            head_sampling_rate?: number
+        }
     }
     placement?: {
         mode: 'off' | 'smart'

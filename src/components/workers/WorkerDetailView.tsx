@@ -262,7 +262,11 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
         const response = await updateWorkerSettings(worker.name, {
             observability: {
                 enabled,
-                head_sampling_rate: enabled ? 1 : 0,
+                // Preserve existing traces settings
+                traces: settings?.observability?.traces ? {
+                    enabled: settings.observability.traces.enabled,
+                    head_sampling_rate: settings.observability.traces.head_sampling_rate,
+                } : undefined,
             },
         })
         setUpdatingSettings(false)
@@ -276,8 +280,12 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
         setUpdatingSettings(true)
         const response = await updateWorkerSettings(worker.name, {
             observability: {
+                // Preserve existing logs enabled state
                 enabled: settings?.observability?.enabled ?? false,
-                head_sampling_rate: enabled ? 1 : 0,
+                traces: {
+                    enabled,
+                    head_sampling_rate: enabled ? 1 : 0,
+                },
             },
         })
         setUpdatingSettings(false)
@@ -658,7 +666,7 @@ export function WorkerDetailView({ worker, onBack, onRefresh }: WorkerDetailView
                                     </p>
                                 </div>
                                 <Switch
-                                    checked={(settings?.observability?.head_sampling_rate ?? 0) > 0}
+                                    checked={settings?.observability?.traces?.enabled ?? false}
                                     disabled={loading || updatingSettings}
                                     onCheckedChange={(checked: boolean) => { void handleToggleTraces(checked) }}
                                 />

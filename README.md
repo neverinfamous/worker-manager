@@ -1,6 +1,6 @@
 # Worker Manager for Cloudflare
 
-**Last Updated:** December 30, 2025 | **Version:** 0.1.0
+**Last Updated:** December 31, 2025 | **Version:** 0.1.0
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/worker--manager-blue?logo=github)](https://github.com/neverinfamous/worker-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -29,6 +29,15 @@ Worker Manager for Cloudflare — A full-featured, self-hosted web app for manag
 - 🌐 **Subdomain Toggle** - Enable/disable workers.dev subdomain
 - 📊 **Bindings Display** - View R2, D1, KV, Queue, and DO bindings
 - ⚙️ **Operations** - Create, clone, and delete workers with R2 backup
+
+### Worker Settings
+- 📝 **Workers Logs** - Enable/disable console logging
+- 🔍 **Workers Traces** - Enable/disable request tracing
+- 📤 **Logpush** - Toggle log export with link to Cloudflare Dashboard configuration
+- 🚀 **Smart Placement** - Enable/disable automatic placement optimization
+- 📅 **Compatibility Date** - Edit Worker compatibility date
+- 🏷️ **Compatibility Flags** - Add/remove from predefined list of common flags
+- 🔗 **Tail Workers** - Connect/disconnect Tail Worker consumers
 
 ### Pages Management
 - 📄 **Project Listing** - Deployment status badges and branch info
@@ -288,6 +297,7 @@ worker-manager/
 | POST | `/api/workers/:name/secrets` | Add worker secret |
 | DELETE | `/api/workers/:name/secrets/:name` | Delete worker secret |
 | GET | `/api/workers/:name/settings` | Get worker settings and bindings |
+| PATCH | `/api/workers/:name/settings` | Update worker settings (observability, placement, etc.) |
 | GET | `/api/workers/:name/schedules` | Get cron schedules |
 | PUT | `/api/workers/:name/schedules` | Update cron schedules |
 | GET | `/api/workers/:name/subdomain` | Get subdomain status |

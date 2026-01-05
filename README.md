@@ -8,7 +8,7 @@
 ![Status](https://img.shields.io/badge/status-Under%20Development-orange)
 [![Type Safety](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://github.com/neverinfamous/worker-manager)
 
-Worker Manager for Cloudflare — A full-featured, self-hosted web app for managing Cloudflare Workers and Pages projects. View worker details, routes, secrets, and cron triggers. Monitor Pages deployments with rollback capability. Track performance metrics with visual charts. Manage webhooks for event notifications. All protected by GitHub SSO via Cloudflare Zero Trust.
+Worker Manager for Cloudflare — Full-featured, self-hosted web app for managing Cloudflare Workers and Pages projects. View worker details, routes, secrets, and cron triggers. Monitor Pages deployments with rollback capability. Track performance metrics with visual charts. Manage webhooks for event notifications. All protected by GitHub SSO via Cloudflare Zero Trust.
 
 **[Live Demo](https://worker.adamic.tech/)** • **[Changelog](CHANGELOG.md)**
 

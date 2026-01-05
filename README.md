@@ -1,6 +1,6 @@
 # Worker Manager for Cloudflare
 
-**Last Updated:** December 31, 2025 | **Version:** 0.1.0
+**Last Updated:** January 5, 2026 | **Version:** 0.1.0
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/worker--manager-blue?logo=github)](https://github.com/neverinfamous/worker-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)

@@ -13,6 +13,7 @@ dist/
 .dev.vars
 
 # IDE
+.gemini/
 .vscode/
 .idea/
 *.swp

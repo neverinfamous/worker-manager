@@ -109,7 +109,7 @@ export function RequestsChart({ timeRange }: RequestsChartProps): React.ReactNod
                             borderRadius: '8px',
                             fontSize: '12px',
                         }}
-                        formatter={(value: number) => [value.toLocaleString(), 'Requests']}
+                        formatter={(value) => [(value as number ?? 0).toLocaleString(), 'Requests']}
                     />
                     <Area
                         type="monotone"

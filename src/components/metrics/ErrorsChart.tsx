@@ -105,8 +105,8 @@ export function ErrorsChart({ timeRange, errorCount }: ErrorsChartProps): React.
                             borderRadius: '8px',
                             fontSize: '12px',
                         }}
-                        formatter={(value: number, name: string) => [
-                            name === 'rate' ? `${value.toFixed(2)}%` : value.toLocaleString(),
+                        formatter={(value, name) => [
+                            name === 'rate' ? `${(value as number ?? 0).toFixed(2)}%` : (value as number ?? 0).toLocaleString(),
                             name === 'rate' ? 'Error Rate' : 'Errors'
                         ]}
                     />

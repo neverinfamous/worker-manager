@@ -54,7 +54,7 @@ export function LatencyChart({ p50, p90, p99 }: LatencyChartProps): React.ReactN
                             borderRadius: '8px',
                             fontSize: '12px',
                         }}
-                        formatter={(value: number) => [value.toFixed(1) + 'ms', 'Duration']}
+                        formatter={(value) => [(value as number ?? 0).toFixed(1) + 'ms', 'Duration']}
                     />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                         {data.map((_entry, index) => (

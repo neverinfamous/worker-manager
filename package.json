@@ -61,13 +61,13 @@
         "tailwind-merge": "^3.3.0"
     },
     "devDependencies": {
-        "@cloudflare/workers-types": "^4.20260103.0",
+        "@cloudflare/workers-types": "^4.20260111.0",
         "@eslint/js": "^9.39.2",
         "@tailwindcss/vite": "^4.1.17",
         "@testing-library/jest-dom": "^6.6.3",
         "@testing-library/react": "^16.3.1",
         "@types/node": "^25.0.3",
-        "@types/react": "^19.2.6",
+        "@types/react": "^19.2.8",
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^5.1.2",
         "@vitest/coverage-v8": "^4.0.16",
@@ -79,9 +79,9 @@
         "tailwindcss": "^4.1.17",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.52.0",
-        "vite": "^7.3.0",
+        "vite": "^7.3.1",
         "vitest": "^4.0.16",
-        "wrangler": "^4.56.0"
+        "wrangler": "^4.58.0"
     },
     "overrides": {
         "cross-spawn": "^7.0.5",

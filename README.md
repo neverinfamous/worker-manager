@@ -1,6 +1,6 @@
 # Worker Manager for Cloudflare
 
-**Last Updated:** January 5, 2026 | **Version:** 0.1.0
+**Last Updated:** January 12, 2026 | **Version:** 0.1.0
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/worker--manager-blue?logo=github)](https://github.com/neverinfamous/worker-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -12,7 +12,7 @@ Worker Manager for Cloudflare — Full-featured, self-hosted web app for managin
 
 **[Live Demo](https://worker.adamic.tech/)** • **[Changelog](CHANGELOG.md)**
 
-**Tech Stack:** React 19.2.3 | Vite 7.3.0 | TypeScript 5.9.3 | Tailwind CSS 4.1.17 | Cloudflare Workers + Zero Trust
+**Tech Stack:** React 19.2.3 | Vite 7.3.1 | TypeScript 5.9.3 | Tailwind CSS 4.1.17 | Cloudflare Workers + Zero Trust
 
 > ⚠️ **Development Status:** This project is under active development. Features may change and some functionality may be incomplete.
 

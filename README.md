@@ -69,7 +69,7 @@ Worker Manager for Cloudflare — Full-featured, self-hosted web app for managin
 ### Prerequisites
 
 - [Cloudflare account](https://dash.cloudflare.com/sign-up) (Free tier works!)
-- [Node.js](https://nodejs.org/) 20+ and npm
+- [Node.js](https://nodejs.org/) 24+ (LTS) and npm
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) 4.0+
 - Domain managed by Cloudflare (optional - can use Workers.dev subdomain)
 

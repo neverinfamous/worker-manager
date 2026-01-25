@@ -64,7 +64,9 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
 }
 
 /* Custom scrollbar styles */
@@ -79,12 +81,20 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--color-muted-foreground) 30%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--color-muted-foreground) 30%,
+    transparent
+  );
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--color-muted-foreground) 50%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--color-muted-foreground) 50%,
+    transparent
+  );
 }
 
 /* Focus visible styles for accessibility */

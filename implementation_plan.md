@@ -6,20 +6,23 @@ A full-featured, self-hosted web application for managing Cloudflare Pages proje
 
 > [!IMPORTANT]
 > **Workers vs Pages Scope Decision Required**
-> 
+>
 > Cloudflare has two closely related but distinct deployment targets:
+>
 > - **Workers**: Individual script-based serverless functions
 > - **Pages**: Full-stack applications with static assets + Functions
-> 
+>
 > This plan covers **both** under a unified interface. Please confirm if you want:
+>
 > 1. **Combined** - Single app managing both Workers and Pages (recommended)
 > 2. **Workers Only** - Focus solely on Workers scripts
 > 3. **Pages Only** - Focus solely on Pages projects
 
 > [!WARNING]
 > **Cloudflare API Limitations**
-> 
+>
 > Some features have API constraints that affect implementation:
+>
 > - **Worker Script Content**: Can be read via API but requires multipart handling
 > - **Live Editing**: Workers cannot be hot-edited in production; requires redeployment
 > - **Pages Git Integration**: Projects linked to Git cannot have direct file uploads
@@ -30,44 +33,48 @@ A full-featured, self-hosted web application for managing Cloudflare Pages proje
 ## Proposed Features
 
 ### Core Management (CRUD)
-| Feature | Workers | Pages | Notes |
-|---------|---------|-------|-------|
-| List all | ✅ | ✅ | Via REST API |
-| View details | ✅ | ✅ | Metadata, bindings, routes |
-| Create new | ✅ | ✅ | Via wizard with templates |
-| Clone | ✅ | ✅ | Export + re-import with new name |
-| Delete | ✅ | ✅ | With R2 safety backup |
-| Download/Export | ✅ | ✅ | Script content + config as ZIP |
+
+| Feature         | Workers | Pages | Notes                            |
+| --------------- | ------- | ----- | -------------------------------- |
+| List all        | ✅      | ✅    | Via REST API                     |
+| View details    | ✅      | ✅    | Metadata, bindings, routes       |
+| Create new      | ✅      | ✅    | Via wizard with templates        |
+| Clone           | ✅      | ✅    | Export + re-import with new name |
+| Delete          | ✅      | ✅    | With R2 safety backup            |
+| Download/Export | ✅      | ✅    | Script content + config as ZIP   |
 
 ### Configuration Tabs (Edit Wizard)
-| Tab | Description | API Support |
-|-----|-------------|-------------|
-| **General** | Name, compatibility date/flags | ✅ Full |
-| **Domains & Routes** | Custom domains, route patterns, workers.dev subdomain | ✅ Full |
-| **Environment** | Variables (plain text), Secrets (write-only) | ⚠️ Secrets are write-only |
-| **Bindings** | View-only list of KV/D1/R2/DO/Queue bindings | ✅ Read-only (editing deferred to CloudHub) |
-| **Triggers** | Cron schedules, email triggers | ✅ Full |
-| **Observability** | Logpush destinations, tail workers | ✅ Full |
-| **Access** | Linked Cloudflare Access policies | ⚠️ Requires Zero Trust API |
+
+| Tab                  | Description                                           | API Support                                 |
+| -------------------- | ----------------------------------------------------- | ------------------------------------------- |
+| **General**          | Name, compatibility date/flags                        | ✅ Full                                     |
+| **Domains & Routes** | Custom domains, route patterns, workers.dev subdomain | ✅ Full                                     |
+| **Environment**      | Variables (plain text), Secrets (write-only)          | ⚠️ Secrets are write-only                   |
+| **Bindings**         | View-only list of KV/D1/R2/DO/Queue bindings          | ✅ Read-only (editing deferred to CloudHub) |
+| **Triggers**         | Cron schedules, email triggers                        | ✅ Full                                     |
+| **Observability**    | Logpush destinations, tail workers                    | ✅ Full                                     |
+| **Access**           | Linked Cloudflare Access policies                     | ⚠️ Requires Zero Trust API                  |
 
 ### Operational Features
-| Feature | Description |
-|---------|-------------|
-| **Metrics Dashboard** | Request volume, CPU time, latency (P50/P90/P99) via GraphQL Analytics |
-| **Deployment History** | List past deployments with rollback capability |
-| **Health Monitoring** | Active alarms, error rates, quota usage |
-| **Job History** | All operations tracked in D1 with timestamps |
-| **Webhooks** | HTTP notifications for deployments, errors, job completions |
-| **R2 Backups** | Export Worker/Page config to R2 before destructive ops |
+
+| Feature                | Description                                                           |
+| ---------------------- | --------------------------------------------------------------------- |
+| **Metrics Dashboard**  | Request volume, CPU time, latency (P50/P90/P99) via GraphQL Analytics |
+| **Deployment History** | List past deployments with rollback capability                        |
+| **Health Monitoring**  | Active alarms, error rates, quota usage                               |
+| **Job History**        | All operations tracked in D1 with timestamps                          |
+| **Webhooks**           | HTTP notifications for deployments, errors, job completions           |
+| **R2 Backups**         | Export Worker/Page config to R2 before destructive ops                |
 
 ### Additional Suggested Features
-| Feature | Rationale |
-|---------|-----------|
-| **Tail Logs Viewer** | Real-time log streaming for debugging |
-| **Preview URL Management** | Quick access to preview deployments (Pages) |
-| **Version Comparison** | Diff between Worker versions |
-| **Template Gallery** | Quick-start templates for common patterns |
-| **Bulk Operations** | Multi-select Workers/Pages for batch actions |
+
+| Feature                    | Rationale                                    |
+| -------------------------- | -------------------------------------------- |
+| **Tail Logs Viewer**       | Real-time log streaming for debugging        |
+| **Preview URL Management** | Quick access to preview deployments (Pages)  |
+| **Version Comparison**     | Diff between Worker versions                 |
+| **Template Gallery**       | Quick-start templates for common patterns    |
+| **Bulk Operations**        | Multi-select Workers/Pages for batch actions |
 
 ---
 
@@ -262,44 +269,47 @@ CREATE INDEX IF NOT EXISTS idx_backups_entity ON backups(entity_type, entity_id)
 ### Key API Endpoints
 
 #### Workers
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/workers` | GET | List all Workers |
-| `/api/workers` | POST | Create new Worker |
-| `/api/workers/:name` | GET | Get Worker details |
-| `/api/workers/:name` | PUT | Update Worker |
-| `/api/workers/:name` | DELETE | Delete Worker |
-| `/api/workers/:name/clone` | POST | Clone Worker |
-| `/api/workers/:name/export` | GET | Export Worker as ZIP |
-| `/api/workers/:name/domains` | GET/POST/DELETE | Manage custom domains |
-| `/api/workers/:name/routes` | GET/POST/DELETE | Manage routes |
-| `/api/workers/:name/secrets` | POST/DELETE | Manage secrets |
-| `/api/workers/:name/triggers` | GET/POST/DELETE | Manage cron triggers |
-| `/api/workers/:name/deployments` | GET | List deployments |
-| `/api/workers/:name/rollback` | POST | Rollback to version |
+
+| Endpoint                         | Method          | Description           |
+| -------------------------------- | --------------- | --------------------- |
+| `/api/workers`                   | GET             | List all Workers      |
+| `/api/workers`                   | POST            | Create new Worker     |
+| `/api/workers/:name`             | GET             | Get Worker details    |
+| `/api/workers/:name`             | PUT             | Update Worker         |
+| `/api/workers/:name`             | DELETE          | Delete Worker         |
+| `/api/workers/:name/clone`       | POST            | Clone Worker          |
+| `/api/workers/:name/export`      | GET             | Export Worker as ZIP  |
+| `/api/workers/:name/domains`     | GET/POST/DELETE | Manage custom domains |
+| `/api/workers/:name/routes`      | GET/POST/DELETE | Manage routes         |
+| `/api/workers/:name/secrets`     | POST/DELETE     | Manage secrets        |
+| `/api/workers/:name/triggers`    | GET/POST/DELETE | Manage cron triggers  |
+| `/api/workers/:name/deployments` | GET             | List deployments      |
+| `/api/workers/:name/rollback`    | POST            | Rollback to version   |
 
 #### Pages
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/pages` | GET | List all Pages projects |
-| `/api/pages` | POST | Create new project |
-| `/api/pages/:name` | GET | Get project details |
-| `/api/pages/:name` | PUT | Update project |
-| `/api/pages/:name` | DELETE | Delete project |
-| `/api/pages/:name/clone` | POST | Clone project |
-| `/api/pages/:name/domains` | GET/POST/DELETE | Manage custom domains |
-| `/api/pages/:name/deployments` | GET | List deployments |
-| `/api/pages/:name/rollback` | POST | Rollback to deployment |
+
+| Endpoint                       | Method          | Description             |
+| ------------------------------ | --------------- | ----------------------- |
+| `/api/pages`                   | GET             | List all Pages projects |
+| `/api/pages`                   | POST            | Create new project      |
+| `/api/pages/:name`             | GET             | Get project details     |
+| `/api/pages/:name`             | PUT             | Update project          |
+| `/api/pages/:name`             | DELETE          | Delete project          |
+| `/api/pages/:name/clone`       | POST            | Clone project           |
+| `/api/pages/:name/domains`     | GET/POST/DELETE | Manage custom domains   |
+| `/api/pages/:name/deployments` | GET             | List deployments        |
+| `/api/pages/:name/rollback`    | POST            | Rollback to deployment  |
 
 #### Shared
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/metrics` | GET | GraphQL analytics proxy |
-| `/api/jobs` | GET | List job history |
-| `/api/webhooks` | GET/POST/PUT/DELETE | Manage webhooks |
-| `/api/backups` | GET | List R2 backups |
-| `/api/backups/:id/restore` | POST | Restore from backup |
-| `/api/health` | GET | Health check |
+
+| Endpoint                   | Method              | Description             |
+| -------------------------- | ------------------- | ----------------------- |
+| `/api/metrics`             | GET                 | GraphQL analytics proxy |
+| `/api/jobs`                | GET                 | List job history        |
+| `/api/webhooks`            | GET/POST/PUT/DELETE | Manage webhooks         |
+| `/api/backups`             | GET                 | List R2 backups         |
+| `/api/backups/:id/restore` | POST                | Restore from backup     |
+| `/api/health`              | GET                 | Health check            |
 
 ---
 
@@ -348,8 +358,9 @@ simple = { limit = 100, period = 60 }
 ### Coding Standards Implementation
 
 #### Error Logging (worker/utils/error-logger.ts)
+
 ```typescript
-type Severity = 'error' | 'warning' | 'info';
+type Severity = "error" | "warning" | "info";
 
 interface LogContext {
   module: string;
@@ -361,29 +372,30 @@ interface LogContext {
 }
 
 export function logError(
-  env: Env, 
-  error: Error | string, 
-  context: LogContext, 
-  isLocalDev: boolean
+  env: Env,
+  error: Error | string,
+  context: LogContext,
+  isLocalDev: boolean,
 ): void {
   const code = `${context.module.toUpperCase()}_${context.operation.toUpperCase()}_FAILED`;
   const message = error instanceof Error ? error.message : error;
   const stack = error instanceof Error ? error.stack : undefined;
-  
+
   console.error(`[ERROR] [${context.module}] [${code}] ${message}`, {
     ...context,
     stack,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
-  
+
   // Trigger webhook for critical errors
   if (!isLocalDev) {
-    void triggerWebhook(env, 'job_failed', { code, message, context });
+    void triggerWebhook(env, "job_failed", { code, message, context });
   }
 }
 ```
 
 #### Client-Side Caching (src/lib/cache.ts)
+
 ```typescript
 interface CacheEntry<T> {
   data: T;
@@ -424,34 +436,41 @@ export function invalidateCache(pattern: string): void {
 Since this is a new project, no existing tests exist. We will verify through:
 
 1. **TypeScript Strict Checking**
+
    ```bash
    cd C:\Users\chris\Desktop\worker-manager
    npm run typecheck
    ```
+
    - Must pass with zero errors
 
 2. **ESLint Strict Mode**
+
    ```bash
    npm run lint
    ```
+
    - Must pass with zero errors/warnings
 
 3. **Build Verification**
    ```bash
    npm run build
    ```
+
    - Must complete successfully
 
 ### Manual Verification
 
 1. **Local Development**
+
    ```bash
    # Terminal 1: Frontend
    npm run dev
-   
+
    # Terminal 2: Worker
    npx wrangler dev --config wrangler.dev.toml --local
    ```
+
    - Open http://localhost:5173
    - Verify mock data displays for Workers/Pages list
    - Verify navigation between views works
@@ -472,6 +491,7 @@ Since this is a new project, no existing tests exist. We will verify through:
 ### User Acceptance Testing
 
 After implementation, the user should:
+
 1. Deploy to their Cloudflare account
 2. Verify Workers appear in the list
 3. Test creating a new Worker via the wizard
@@ -483,13 +503,13 @@ After implementation, the user should:
 
 ## Implementation Phases
 
-| Phase | Duration | Deliverables |
-|-------|----------|--------------|
-| **1. Scaffolding** | 1-2 sessions | Project setup, Tailwind/shadcn, basic routing |
-| **2. Core CRUD** | 2-3 sessions | Workers/Pages listing, detail views, create/delete |
-| **3. Configuration** | 2-3 sessions | Domains, secrets, triggers, environment tabs |
-| **4. Operations** | 2 sessions | Metrics, job history, webhooks |
-| **5. Polish** | 1-2 sessions | Error handling, caching, accessibility, testing |
+| Phase                | Duration     | Deliverables                                       |
+| -------------------- | ------------ | -------------------------------------------------- |
+| **1. Scaffolding**   | 1-2 sessions | Project setup, Tailwind/shadcn, basic routing      |
+| **2. Core CRUD**     | 2-3 sessions | Workers/Pages listing, detail views, create/delete |
+| **3. Configuration** | 2-3 sessions | Domains, secrets, triggers, environment tabs       |
+| **4. Operations**    | 2 sessions   | Metrics, job history, webhooks                     |
+| **5. Polish**        | 1-2 sessions | Error handling, caching, accessibility, testing    |
 
 ---
 

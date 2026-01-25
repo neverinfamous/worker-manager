@@ -22,7 +22,7 @@ Please include:
 ## Supported Versions
 
 | Version | Supported |
-|---------|-----------|
+| ------- | --------- |
 | 0.x.x   | ✅        |
 
 ## Security Best Practices

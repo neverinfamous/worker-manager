@@ -453,6 +453,7 @@ Since this is a new project, no existing tests exist. We will verify through:
    - Must pass with zero errors/warnings
 
 3. **Build Verification**
+
    ```bash
    npm run build
    ```

@@ -30,7 +30,7 @@ export function CloneWorkerDialog({
   const [newName, setNewName] = useState(`${workerName}-copy`);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent): void => {
+  const handleSubmit = (e: { preventDefault(): void }): void => {
     e.preventDefault();
 
     if (!newName.trim()) {

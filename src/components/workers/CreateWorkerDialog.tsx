@@ -29,7 +29,7 @@ export function CreateWorkerDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit = async (e: { preventDefault(): void }): Promise<void> => {
     e.preventDefault();
 
     if (!name.trim()) {

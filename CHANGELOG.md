@@ -13,14 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `package.json` now requires Node.js >=24.0.0 in `engines` field
   - README prerequisites updated to specify Node.js 24+ (LTS)
 - **Dependency Updates**: Updated npm dependencies to latest versions
-  - `@cloudflare/workers-types`: 4.20260127.0 → 4.20260205.0
-  - `@types/node`: 25.0.10 → 25.2.0
-  - `@types/react`: 19.2.10 → 19.2.11
-  - `@vitejs/plugin-react`: 5.1.2 → 5.1.3
+  - `@cloudflare/workers-types`: 4.20260127.0 → 4.20260210.0
+  - `@types/node`: 25.0.10 → 25.2.3
+  - `@types/react`: 19.2.10 → 19.2.13
+  - `@vitejs/plugin-react`: 5.1.2 → 5.1.4
   - `eslint-plugin-react-refresh`: 0.4.26 → 0.5.0
   - `globals`: 17.1.0 → 17.3.0
   - `jsdom`: 27.4.0 → 28.0.0
-  - `wrangler`: 4.61.0 → 4.62.0
+  - `typescript-eslint`: 8.54.0 → 8.55.0
+  - `wrangler`: 4.61.0 → 4.64.0
 
 ### Fixed
 

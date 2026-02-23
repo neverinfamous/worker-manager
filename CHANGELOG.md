@@ -25,8 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `lucide-react`: 0.563.0 → 0.575.0
   - `tailwind-merge`: 3.4.0 → 3.5.0
   - `tailwindcss`: 4.1.18 → 4.2.1
-  - `typescript-eslint`: 8.55.0 → 8.56.0
-  - `wrangler`: 4.64.0 → 4.67.0
+  - `typescript-eslint`: 8.55.0 → 8.56.1
+  - `wrangler`: 4.64.0 → 4.68.0
 
 ### Fixed
 

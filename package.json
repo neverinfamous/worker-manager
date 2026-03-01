@@ -7,11 +7,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview",
+    "preview": "npm run build && wrangler dev",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck",
-    "deploy": "npm run build && npx wrangler deploy",
+    "deploy": "npm run build && wrangler deploy",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"
@@ -61,6 +61,7 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.25.6",
     "@cloudflare/workers-types": "^4.20260305.0",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.2.1",

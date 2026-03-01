@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Recharts v3.7.0 Compatibility**: Replaced deprecated `Cell` component with `shape` prop pattern in `LatencyChart` for individual bar coloring (SR-TS-01 compliant)
 - **React 19 FormEvent Deprecation**: Replaced deprecated `React.FormEvent` with structural typing fallback `{ preventDefault(): void }` in `CreateWorkerDialog` and `CloneWorkerDialog` components
 - **Security**: Resolved `minimatch` ReDoS vulnerability (GHSA-7r86-cg39-jmmj, GHSA-23c5-xmqv-rm74) via `npm audit fix`
-- **Git Hygiene**: Added `dist-node/` to `.gitignore` and untracked previously committed TypeScript project-reference build artifacts
+- **Git Hygiene**: Added `dist-node/`, `wrangler.toml`, and `implementation_plan.md` to `.gitignore` and untracked previously committed build artifacts, sensitive config, and planning docs
 
 ### Added
 

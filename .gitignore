@@ -7,6 +7,12 @@ dist/
 dist-node/
 .wrangler/
 
+# Wrangler config (use wrangler.toml.example as template)
+wrangler.toml
+
+# Planning docs
+implementation_plan.md
+
 # Environment files
 .env
 .env.local
